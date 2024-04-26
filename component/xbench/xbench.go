@@ -146,7 +146,7 @@ func (c *Xbench) OnConfigChange() {
 }
 
 func (c *Xbench) StartTests() {
-	tests := []string{"localWrite", "localRead", "remoteWrite", "remoteRead"}
+	tests := []string{"localWrite", "localRead", "remoteWrite", "remoteRead", "multiRemoteWrite", "multiRemoteRead"}
 	var err error
 
 	log.Info("Xbench::StartTests : Starting tests")
