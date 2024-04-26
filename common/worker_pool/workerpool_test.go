@@ -1,0 +1,145 @@
+/*
+    _____           _____   _____   ____          ______  _____  ------
+   |     |  |      |     | |     | |     |     | |       |            |
+   |     |  |      |     | |     | |     |     | |       |            |
+   | --- |  |      |     | |-----| |---- |     | |-----| |-----  ------
+   |     |  |      |     | |     | |     |     |       | |       |
+   | ____|  |_____ | ____| | ____| |     |_____|  _____| |_____  |_____
+
+
+   Licensed under the MIT License <http://opensource.org/licenses/MIT>.
+
+   Copyright © 2020-2024 Microsoft Corporation. All rights reserved.
+   Author : <blobfusedev@microsoft.com>
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal
+   in the Software without restriction, including without limitation the rights
+   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   copies of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in all
+   copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE
+*/
+
+package worker_pool
+
+import (
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+)
+
+type workerPoolTestSuite struct {
+	suite.Suite
+	assert *assert.Assertions
+}
+
+func (suite *workerPoolTestSuite) SetupTest() {
+}
+
+func (suite *workerPoolTestSuite) cleanupTest() {
+}
+
+type workItem struct {
+	failCnt int32
+}
+
+func workItemCallback(i *workItem) error {
+	return nil
+}
+
+func (suite *workerPoolTestSuite) TestCreate() {
+	suite.assert = assert.New(suite.T())
+
+	tp := Allocate[*workItem](0, nil)
+	suite.assert.Nil(tp)
+
+	tp = Allocate[*workItem](1, nil)
+	suite.assert.Nil(tp)
+
+	tp = Allocate[*workItem](1, workItemCallback)
+	suite.assert.NotNil(tp)
+	suite.assert.Equal(tp.workerCount, uint32(1))
+}
+
+func (suite *workerPoolTestSuite) TestStartStop() {
+	suite.assert = assert.New(suite.T())
+
+	r := func(i *workItem) error {
+		suite.assert.Equal(i.failCnt, int32(1))
+		return nil
+	}
+
+	tp := Allocate(2, r)
+	suite.assert.NotNil(tp)
+	suite.assert.Equal(tp.workerCount, uint32(2))
+
+	tp.Start()
+	suite.assert.NotNil(tp.work)
+
+	tp.Stop()
+}
+
+func (suite *workerPoolTestSuite) TestSchedule() {
+	suite.assert = assert.New(suite.T())
+
+	r := func(i *workItem) error {
+		suite.assert.Equal(i.failCnt, int32(1))
+		return nil
+	}
+
+	tp := Allocate(2, r)
+	suite.assert.NotNil(tp)
+	suite.assert.Equal(tp.workerCount, uint32(2))
+
+	tp.Start()
+	suite.assert.NotNil(tp.work)
+
+	tp.Schedule(&workItem{failCnt: 1})
+	tp.Schedule(&workItem{failCnt: 1})
+
+	time.Sleep(1 * time.Second)
+	tp.Stop()
+}
+
+func (suite *workerPoolTestSuite) TestPrioritySchedule() {
+	suite.assert = assert.New(suite.T())
+
+	callbackCnt := int32(0)
+	r := func(i *workItem) error {
+		suite.assert.Equal(i.failCnt, int32(5))
+		atomic.AddInt32(&callbackCnt, 1)
+		return nil
+	}
+
+	tp := Allocate(10, r)
+	suite.assert.NotNil(tp)
+	suite.assert.Equal(tp.workerCount, uint32(10))
+
+	tp.Start()
+	suite.assert.NotNil(tp.work)
+
+	for i := 0; i < 100; i++ {
+		tp.Schedule(&workItem{failCnt: 5})
+	}
+
+	time.Sleep(1 * time.Second)
+	suite.assert.Equal(callbackCnt, int32(100))
+	tp.Stop()
+}
+func TestWorkerPoolSuite(t *testing.T) {
+	suite.Run(t, new(workerPoolTestSuite))
+}

@@ -31,15 +31,72 @@
    SOFTWARE
 */
 
-package cmd
+package block_pool
 
 import (
-	_ "github.com/Azure/azure-storage-fuse/v2/component/attr_cache"
-	_ "github.com/Azure/azure-storage-fuse/v2/component/azstorage"
-	_ "github.com/Azure/azure-storage-fuse/v2/component/block_cache"
-	_ "github.com/Azure/azure-storage-fuse/v2/component/file_cache"
-	_ "github.com/Azure/azure-storage-fuse/v2/component/libfuse"
-	_ "github.com/Azure/azure-storage-fuse/v2/component/loopback"
-	_ "github.com/Azure/azure-storage-fuse/v2/component/stream"
-	_ "github.com/Azure/azure-storage-fuse/v2/component/xbench"
+	"fmt"
+	"syscall"
 )
+
+// Block is a memory mapped buffer with its state to hold data
+type Block[T any] struct {
+	name    string // Name of object this belong to
+	id      string // Unique id of this block in the object
+	offset  uint64 // Start offset of the data this block holds
+	length  uint64 // Length of data this block holds
+	data    []byte // Data read from blob
+	appInfo T      // Any additional info that application wants to hold
+}
+
+// Allocate creates a new memory mapped buffer for the given size
+func allocate[T any](size uint64) (*Block[T], error) {
+	if size == 0 {
+		return nil, fmt.Errorf("invalid size")
+	}
+
+	prot, flags := syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_ANON|syscall.MAP_PRIVATE
+	addr, err := syscall.Mmap(-1, 0, int(size), prot, flags)
+
+	if err != nil {
+		return nil, fmt.Errorf("mmap error: %v", err)
+	}
+
+	block := &Block[T]{
+		name:   "",
+		id:     "",
+		offset: 0,
+		length: 0,
+		data:   addr,
+	}
+
+	return block, nil
+}
+
+// Release cleans up the memory mapped buffer
+func (b *Block[T]) release() error {
+	if b.data == nil {
+		return fmt.Errorf("invalid buffer")
+	}
+
+	err := syscall.Munmap(b.data)
+	b.data = nil
+	if err != nil {
+		// if we get here, there is likely memory corruption.
+		return fmt.Errorf("munmap error: %v", err)
+	}
+
+	return nil
+}
+
+// ReUse re-inits the Block by just keeping the data buffer and resetting the rest
+func (b *Block[T]) ReUse() {
+	b.name = ""
+	b.id = ""
+	b.offset = 0
+	b.length = 0
+}
+
+// Get the app info back
+func (b *Block[T]) AppInfo() T {
+	return b.appInfo
+}
