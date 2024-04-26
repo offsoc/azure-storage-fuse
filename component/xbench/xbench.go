@@ -152,6 +152,7 @@ func (c *Xbench) StartTests() {
 	log.Info("Xbench::StartTests : Starting tests")
 	fileCount := 0
 	for _, test := range tests {
+		log.Info("Xbench::StartTests : Starting tests [%v]", test)
 		startTime := time.Now()
 
 		switch {
