@@ -125,11 +125,10 @@ func (c *Xbench) Configure(_ bool) error {
 	// Extract values from 'conf' and store them as you wish here
 
 	c.blockSize = (8 * _1MB)
-	//c.dataSize = (40 * 1024 * _1MB)
-	c.dataSize = (200 * _1MB)
+	c.dataSize = (40 * 1024 * _1MB)
 	c.fileCount = 10
 
-	c.path = common.ExpandPath("./")
+	c.path = common.ExpandPath("/mnt/tempcache")
 
 	c.buff = make([]byte, c.blockSize)
 
@@ -150,6 +149,7 @@ func (c *Xbench) StartTests() {
 	tests := []string{"localWrite", "localRead", "remoteWrite", "remoteRead"}
 	var err error
 
+	log.Info("Xbench::StartTests : Starting tests")
 	fileCount := 0
 	for _, test := range tests {
 		startTime := time.Now()
@@ -183,10 +183,13 @@ func (c *Xbench) StartTests() {
 			return
 		} else {
 			timeTaken := runTime.Seconds()
+			log.Info("Xbench::StartTests : Test %s completed in %v seconds for %v bytes", test, timeTaken, float64(c.dataSize*uint64(fileCount)))
 			speed := float64(c.dataSize*uint64(fileCount)) / timeTaken
 			log.Info("Xbench::StartTests : Test %s [%v MB in %v seconds, speed : %v MB/s]", test, (c.dataSize/(_1MB))*uint64(fileCount), timeTaken, speed)
 		}
 	}
+
+	log.Info("Xbench::StartTests : Stopping tests")
 }
 
 func (c *Xbench) LocalWriteTest(fileNum int) error {
