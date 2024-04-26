@@ -41,6 +41,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Azure/azure-storage-fuse/v2/common"
 	"github.com/Azure/azure-storage-fuse/v2/common/config"
 	"github.com/Azure/azure-storage-fuse/v2/common/log"
 	"github.com/Azure/azure-storage-fuse/v2/internal"
@@ -56,6 +57,7 @@ import (
 // Common structure for Component
 type Xbench struct {
 	internal.BaseComponent
+	path      string
 	buff      []byte
 	blockSize uint64
 	dataSize  uint64
@@ -124,8 +126,10 @@ func (c *Xbench) Configure(_ bool) error {
 
 	c.blockSize = (8 * _1MB)
 	//c.dataSize = (40 * 1024 * _1MB)
-	c.dataSize = (10 * _1MB)
-	c.fileCount = 20
+	c.dataSize = (200 * _1MB)
+	c.fileCount = 10
+
+	c.path = common.ExpandPath("./")
 
 	c.buff = make([]byte, c.blockSize)
 
@@ -180,14 +184,14 @@ func (c *Xbench) StartTests() {
 		} else {
 			timeTaken := runTime.Seconds()
 			speed := float64(c.dataSize*uint64(fileCount)) / timeTaken
-			log.Info("Xbench::StartTests : Test %s [%v MB written in %v seconds, speed : %v MB/s]", test, (c.dataSize/(_1MB))*uint64(fileCount), timeTaken, speed)
+			log.Info("Xbench::StartTests : Test %s [%v MB in %v seconds, speed : %v MB/s]", test, (c.dataSize/(_1MB))*uint64(fileCount), timeTaken, speed)
 		}
 	}
 }
 
 func (c *Xbench) LocalWriteTest(fileNum int) error {
 	// Write to local disk
-	fileName := fmt.Sprintf("testLocal_%d.data", fileNum)
+	fileName := fmt.Sprintf("%s/testLocal_%d.data", c.path, fileNum)
 	h, err := os.Create(fileName)
 	if err != nil {
 		return err
@@ -209,7 +213,7 @@ func (c *Xbench) LocalWriteTest(fileNum int) error {
 
 func (c *Xbench) LocalReadTest(fileNum int) error {
 	// Read from local disk
-	fileName := fmt.Sprintf("testLocal_%d.data", fileNum)
+	fileName := fmt.Sprintf("%s/testLocal_%d.data", c.path, fileNum)
 	h, err := os.Open(fileName)
 	if err != nil {
 		return err
@@ -231,7 +235,7 @@ func (c *Xbench) LocalReadTest(fileNum int) error {
 
 func (c *Xbench) RemoteWriteTest(fileNum int) error {
 	// Write to remote location
-	fileName := fmt.Sprintf("testRemote_%d.data", fileNum)
+	fileName := fmt.Sprintf("%s/testRemote_%d.data", c.path, fileNum)
 	h, err := c.NextComponent().CreateFile(internal.CreateFileOptions{
 		Name: fileName,
 		Mode: 0666,
@@ -263,7 +267,7 @@ func (c *Xbench) RemoteWriteTest(fileNum int) error {
 
 func (c *Xbench) RemoteReadTest(fileNum int) error {
 	// Read from remote location
-	fileName := fmt.Sprintf("testRemote_%d.data", fileNum)
+	fileName := fmt.Sprintf("%s/testRemote_%d.data", c.path, fileNum)
 	h, err := c.NextComponent().OpenFile(internal.OpenFileOptions{
 		Name:  fileName,
 		Flags: os.O_RDONLY,

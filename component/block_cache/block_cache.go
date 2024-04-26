@@ -1257,6 +1257,10 @@ func (bc *BlockCache) diskEvict(node *list.Element) {
 
 // checkDiskUsage : Callback to check usage of disk and decide whether eviction is needed
 func (bc *BlockCache) checkDiskUsage() bool {
+	if bc.tmpPath == "" {
+		return false
+	}
+
 	data, _ := common.GetUsage(bc.tmpPath)
 	usage := uint32((data * 100) / float64(bc.diskSize))
 
