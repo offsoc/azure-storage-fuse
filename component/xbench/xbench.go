@@ -184,9 +184,9 @@ func (c *Xbench) StartTests() {
 			return
 		} else {
 			timeTaken := runTime.Seconds()
-			log.Info("Xbench::StartTests : Test %s completed in %v seconds for %v bytes", test, timeTaken, float64(c.dataSize*uint64(fileCount)))
-			speed := float64(c.dataSize*uint64(fileCount)) / timeTaken
-			log.Info("Xbench::StartTests : Test %s [%v MB in %v seconds, speed : %v MB/s]", test, (c.dataSize/(_1MB))*uint64(fileCount), timeTaken, speed)
+			log.Info("Xbench::StartTests : Test %s completed in %v seconds for %v bytes", test, timeTaken, (c.dataSize * uint64(fileCount)))
+			speed := float64((c.dataSize/(_1MB))*uint64(fileCount)) / float64(timeTaken)
+			log.Info("Xbench::StartTests : Test %s [%v MB in %v seconds, speed : %.2f MB/s]", test, (c.dataSize/(_1MB))*uint64(fileCount), timeTaken, speed)
 		}
 	}
 
