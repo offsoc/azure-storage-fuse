@@ -363,6 +363,6 @@ func init() {
 	internal.AddComponent(compName, NewXbenchComponent)
 
 	pathFlag := config.AddStringFlag("bench-path", "", "configures the tmp location for the xbench. Configure the fastest disk (SSD or ramdisk) for best performance.")
-	config.BindPFlag(compName+".path", pathFlag)
+	config.BindPFlag(compName+".bench-path", pathFlag)
 
 }
