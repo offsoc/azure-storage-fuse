@@ -71,6 +71,7 @@ const (
 // Structure defining your config parameters
 type XbenchOptions struct {
 	// e.g. var1 uint32 `config:"var1"`
+	Path string `config:"bench-path" yaml:"bench-path,omitempty"`
 }
 
 const compName = "xbench"
@@ -128,7 +129,11 @@ func (c *Xbench) Configure(_ bool) error {
 	c.dataSize = (40 * 1024 * _1MB)
 	c.fileCount = 10
 
-	c.path = common.ExpandPath("/mnt/tempcache")
+	c.path = common.ExpandPath(conf.Path)
+	if c.path == "" {
+		log.Err("Xbench::Configure : config error [bench-path not set]")
+		return fmt.Errorf("config error in %s error [bench-path not set]", c.Name())
+	}
 
 	c.buff = make([]byte, c.blockSize)
 
@@ -356,4 +361,8 @@ func NewXbenchComponent() internal.Component {
 // On init register this component to pipeline and supply your constructor
 func init() {
 	internal.AddComponent(compName, NewXbenchComponent)
+
+	pathFlag := config.AddStringFlag("bench-path", "", "configures the tmp location for the xbench. Configure the fastest disk (SSD or ramdisk) for best performance.")
+	config.BindPFlag(compName+".path", pathFlag)
+
 }
