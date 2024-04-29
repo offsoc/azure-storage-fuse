@@ -151,7 +151,7 @@ func (c *Xbench) OnConfigChange() {
 }
 
 func (c *Xbench) StartTests() {
-	tests := []string{"localWrite", "localRead", "remoteWrite", "remoteRead", "multiRemoteWrite", "multiRemoteRead"}
+	tests := []string{"localWrite", "localRead", "fuseWrite", "fuseRead", "remoteWrite", "remoteRead", "multiRemoteWrite", "multiRemoteRead"}
 	var err error
 
 	log.Info("Xbench::StartTests : Starting tests")
@@ -163,10 +163,16 @@ func (c *Xbench) StartTests() {
 		switch {
 		case test == "localWrite":
 			fileCount = 1
-			err = c.LocalWriteTest(0)
+			err = c.LocalWriteTest(c.path, 0)
 		case test == "localRead":
 			fileCount = 1
-			err = c.LocalReadTest(0)
+			err = c.LocalReadTest(c.path, 0)
+		case test == "fuseWrite":
+			fileCount = 1
+			err = c.LocalWriteTest(common.MountPath, 0)
+		case test == "fuseRead":
+			fileCount = 1
+			err = c.LocalReadTest(common.MountPath, 0)
 		case test == "remoteWrite":
 			fileCount = 1
 			err = c.RemoteWriteTest(0)
@@ -198,9 +204,10 @@ func (c *Xbench) StartTests() {
 	log.Info("Xbench::StartTests : Stopping tests")
 }
 
-func (c *Xbench) LocalWriteTest(fileNum int) error {
+func (c *Xbench) LocalWriteTest(path string, fileNum int) error {
 	// Write to local disk
-	fileName := fmt.Sprintf("%s/testLocal_%d.data", c.path, fileNum)
+	log.Info("Xbench::LocalWriteTest : Writing to local file %s", path)
+	fileName := fmt.Sprintf("%s/testLocal_%d.data", path, fileNum)
 	h, err := os.Create(fileName)
 	if err != nil {
 		return err
@@ -220,9 +227,10 @@ func (c *Xbench) LocalWriteTest(fileNum int) error {
 	return nil
 }
 
-func (c *Xbench) LocalReadTest(fileNum int) error {
+func (c *Xbench) LocalReadTest(path string, fileNum int) error {
 	// Read from local disk
-	fileName := fmt.Sprintf("%s/testLocal_%d.data", c.path, fileNum)
+	log.Info("Xbench::LocalReadTest : Reading from local file %s", path)
+	fileName := fmt.Sprintf("%s/testLocal_%d.data", path, fileNum)
 	h, err := os.Open(fileName)
 	if err != nil {
 		return err
@@ -244,7 +252,7 @@ func (c *Xbench) LocalReadTest(fileNum int) error {
 
 func (c *Xbench) RemoteWriteTest(fileNum int) error {
 	// Write to remote location
-	fileName := fmt.Sprintf("%s/testRemote_%d.data", c.path, fileNum)
+	fileName := fmt.Sprintf("testRemote_%d.data", fileNum)
 	h, err := c.NextComponent().CreateFile(internal.CreateFileOptions{
 		Name: fileName,
 		Mode: 0666,
@@ -276,7 +284,7 @@ func (c *Xbench) RemoteWriteTest(fileNum int) error {
 
 func (c *Xbench) RemoteReadTest(fileNum int) error {
 	// Read from remote location
-	fileName := fmt.Sprintf("%s/testRemote_%d.data", c.path, fileNum)
+	fileName := fmt.Sprintf("testRemote_%d.data", fileNum)
 	h, err := c.NextComponent().OpenFile(internal.OpenFileOptions{
 		Name:  fileName,
 		Flags: os.O_RDONLY,
