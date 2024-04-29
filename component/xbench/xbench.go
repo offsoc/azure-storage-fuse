@@ -38,6 +38,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"os"
+	"os/exec"
 	"sync"
 	"time"
 
@@ -158,6 +159,15 @@ func (c *Xbench) StartTests() {
 	fileCount := 0
 	for _, test := range tests {
 		log.Info("Xbench::StartTests : Starting tests [%v]", test)
+
+		script := exec.Command("sysctl", "-w", "vm.drop_caches=3")
+		script.Stdout = os.Stdout
+		script.Stderr = os.Stdout
+
+		if err := script.Run(); err != nil {
+			log.Err("Xbench::StartTests : Failed to clear kernel cache [%s]", err.Error())
+		}
+
 		startTime := time.Now()
 
 		switch {
@@ -229,7 +239,7 @@ func (c *Xbench) LocalWriteTest(path string, fileNum int) error {
 
 func (c *Xbench) LocalReadTest(path string, fileNum int) error {
 	// Read from local disk
-	log.Info("Xbench::LocalReadTest : Reading from local file %s", path)
+	log.Info("Xbench::LocalReadTest : Reading from to local file %s", path)
 	fileName := fmt.Sprintf("%s/testLocal_%d.data", path, fileNum)
 	h, err := os.Open(fileName)
 	if err != nil {
