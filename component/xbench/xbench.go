@@ -159,8 +159,8 @@ func (c *Xbench) StartTests() {
 		"localRead",
 		"localWrite",
 
-		"remoteRead",
 		"remoteWrite",
+		"remoteRead",
 
 		"multiFuseWrite",
 		"multiFuseRead",
