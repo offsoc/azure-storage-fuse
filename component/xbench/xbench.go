@@ -153,11 +153,11 @@ func (c *Xbench) OnConfigChange() {
 
 func (c *Xbench) StartTests() {
 	tests := []string{
-		"fuseRead",
 		"fuseWrite",
+		"fuseRead",
 
-		"localRead",
 		"localWrite",
+		"localRead",
 
 		"remoteWrite",
 		"remoteRead",
