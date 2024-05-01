@@ -152,7 +152,26 @@ func (c *Xbench) OnConfigChange() {
 }
 
 func (c *Xbench) StartTests() {
-	tests := []string{"localWrite", "localRead", "fuseWrite", "fuseRead", "remoteWrite", "remoteRead", "multiRemoteWrite", "multiRemoteRead"}
+	tests := []string{
+		"fuseRead",
+		"fuseWrite",
+
+		"localRead",
+		"localWrite",
+
+		"remoteRead",
+		"remoteWrite",
+
+		"multiFuseWrite",
+		"multiFuseRead",
+
+		"multiLocalWrite",
+		"multiLocalRead",
+
+		"multiRemoteWrite",
+		"multiRemoteRead",
+	}
+
 	var err error
 
 	log.Info("Xbench::StartTests : Starting tests")
@@ -171,30 +190,51 @@ func (c *Xbench) StartTests() {
 		startTime := time.Now()
 
 		switch {
-		case test == "localWrite":
-			fileCount = 1
-			err = c.LocalWriteTest(c.path, 0)
-		case test == "localRead":
-			fileCount = 1
-			err = c.LocalReadTest(c.path, 0)
-		case test == "fuseWrite":
-			fileCount = 1
-			err = c.LocalWriteTest(common.MountPath, 0)
+		// Test on mount path itself
 		case test == "fuseRead":
 			fileCount = 1
 			err = c.LocalReadTest(common.MountPath, 0)
-		case test == "remoteWrite":
+		case test == "fuseWrite":
 			fileCount = 1
-			err = c.RemoteWriteTest(0)
+			err = c.LocalWriteTest(common.MountPath, 0)
+
+		// Test on Local path
+		case test == "localRead":
+			fileCount = 1
+			err = c.LocalReadTest(c.path, 0)
+		case test == "localWrite":
+			fileCount = 1
+			err = c.LocalWriteTest(c.path, 0)
+
+		// Test on container
 		case test == "remoteRead":
 			fileCount = 1
-			err = c.RemoteReadTest(0)
-		case test == "multiRemoteWrite":
+			err = c.RemoteReadTest("", 0)
+		case test == "remoteWrite":
+			fileCount = 1
+			err = c.RemoteWriteTest("", 0)
+
+		case test == "multiFuseRead":
 			fileCount = int(c.fileCount)
-			err = c.MultiRemoteWriteTest()
+			err = c.MultiTest(common.MountPath, 0, c.LocalReadTest)
+		case test == "multiFuseWrite":
+			fileCount = int(c.fileCount)
+			err = c.MultiTest(common.MountPath, 0, c.LocalWriteTest)
+
+		case test == "multiLocalRead":
+			fileCount = int(c.fileCount)
+			err = c.MultiTest(c.path, 0, c.LocalReadTest)
+		case test == "multiLocalWrite":
+			fileCount = int(c.fileCount)
+			err = c.MultiTest(c.path, 0, c.LocalWriteTest)
+
 		case test == "multiRemoteRead":
 			fileCount = int(c.fileCount)
-			err = c.MultiRemoteReadTest()
+			err = c.MultiTest("", 0, c.RemoteReadTest)
+		case test == "multiRemoteWrite":
+			fileCount = int(c.fileCount)
+			err = c.MultiTest("", 0, c.RemoteWriteTest)
+
 		default:
 			log.Err("Xbench::StartTests : Invalid test name %s", test)
 		}
@@ -260,7 +300,7 @@ func (c *Xbench) LocalReadTest(path string, fileNum int) error {
 	return nil
 }
 
-func (c *Xbench) RemoteWriteTest(fileNum int) error {
+func (c *Xbench) RemoteWriteTest(_ string, fileNum int) error {
 	// Write to remote location
 	fileName := fmt.Sprintf("testRemote_%d.data", fileNum)
 	h, err := c.NextComponent().CreateFile(internal.CreateFileOptions{
@@ -292,7 +332,7 @@ func (c *Xbench) RemoteWriteTest(fileNum int) error {
 	return nil
 }
 
-func (c *Xbench) RemoteReadTest(fileNum int) error {
+func (c *Xbench) RemoteReadTest(_ string, fileNum int) error {
 	// Read from remote location
 	fileName := fmt.Sprintf("testRemote_%d.data", fileNum)
 	h, err := c.NextComponent().OpenFile(internal.OpenFileOptions{
@@ -324,42 +364,13 @@ func (c *Xbench) RemoteReadTest(fileNum int) error {
 	return nil
 }
 
-func (c *Xbench) MultiRemoteWriteTest() error {
+func (c *Xbench) MultiTest(path string, fileNum int, testFunc func(string, int) error) error {
 	var err error = nil
 	wg := sync.WaitGroup{}
 
-	writeFunc := func(fileNum int) {
-		defer wg.Done()
-		currentErr := c.RemoteWriteTest(fileNum)
-		if err != nil {
-			err = currentErr
-		}
-	}
-
 	for i := 0; i < int(c.fileCount); i++ {
 		wg.Add(1)
-		go writeFunc(i)
-	}
-
-	wg.Wait()
-	return err
-}
-
-func (c *Xbench) MultiRemoteReadTest() error {
-	var err error = nil
-	wg := sync.WaitGroup{}
-
-	readFunc := func(fileNum int) {
-		defer wg.Done()
-		currentErr := c.RemoteReadTest(fileNum)
-		if err != nil {
-			err = currentErr
-		}
-	}
-
-	for i := 0; i < int(c.fileCount); i++ {
-		wg.Add(1)
-		go readFunc(i)
+		go testFunc(path, fileNum)
 	}
 
 	wg.Wait()
