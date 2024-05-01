@@ -174,6 +174,8 @@ func (c *Xbench) StartTests() {
 
 	var err error
 
+	time.Sleep(10 * time.Second)
+
 	log.Info("Xbench::StartTests : Starting tests")
 	fileCount := 0
 	for _, test := range tests {
