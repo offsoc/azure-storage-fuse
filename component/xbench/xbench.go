@@ -153,11 +153,11 @@ func (c *Xbench) OnConfigChange() {
 
 func (c *Xbench) StartTests() {
 	tests := []string{
-		"fuseWrite",
 		"fuseRead",
+		"fuseWrite",
 
-		"localWrite",
 		"localRead",
+		"localWrite",
 
 		"remoteWrite",
 		"remoteRead",
@@ -378,7 +378,7 @@ func (c *Xbench) MultiTest(path string, fileNum int, testFunc func(string, int) 
 
 	for i := 0; i < int(c.fileCount); i++ {
 		wg.Add(1)
-		go testFunc(path, fileNum)
+		go testFunc(path, i)
 	}
 
 	wg.Wait()
