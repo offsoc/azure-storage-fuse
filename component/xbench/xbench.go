@@ -37,6 +37,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"sync"
@@ -293,7 +294,7 @@ func (c *Xbench) LocalReadTest(path string, fileNum int) error {
 	bytesRead := uint64(0)
 	for bytesRead < c.dataSize {
 		n, err := h.Read(c.buff)
-		if err != nil {
+		if err != nil && err != io.EOF {
 			log.Err("Xbench::LocalReadTest : Failed to read local file %s [%v]", fileName, err)
 			return err
 		}
@@ -359,7 +360,7 @@ func (c *Xbench) RemoteReadTest(_ string, fileNum int) error {
 			Offset: int64(bytesRead),
 			Data:   c.buff,
 		})
-		if err != nil {
+		if err != nil && err != io.EOF {
 			log.Err("Xbench::RemoteWriteTest : Failed to write remote file %s [%v]", fileName, err)
 			return err
 		}
