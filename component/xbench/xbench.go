@@ -128,7 +128,7 @@ func (c *Xbench) Configure(_ bool) error {
 	// Extract values from 'conf' and store them as you wish here
 
 	c.blockSize = (8 * _1MB)
-	c.dataSize = (40 * 1024 * _1MB)
+	c.dataSize = (25 * _1MB)
 	c.fileCount = 10
 
 	c.path = common.ExpandPath(conf.Path)
@@ -154,11 +154,11 @@ func (c *Xbench) OnConfigChange() {
 
 func (c *Xbench) StartTests() {
 	tests := []string{
-		"fuseRead",
 		"fuseWrite",
+		"fuseRead",
 
-		"localRead",
 		"localWrite",
+		"localRead",
 
 		"remoteWrite",
 		"remoteRead",
@@ -196,26 +196,26 @@ func (c *Xbench) StartTests() {
 		// Test on mount path itself
 		case test == "fuseRead":
 			fileCount = 1
-			err = c.LocalReadTest(common.MountPath, 0)
+			err = c.LocalReadTest(common.MountPath, 0, nil)
 		case test == "fuseWrite":
 			fileCount = 1
-			err = c.LocalWriteTest(common.MountPath, 0)
+			err = c.LocalWriteTest(common.MountPath, 0, nil)
 
 		// Test on Local path
 		case test == "localRead":
 			fileCount = 1
-			err = c.LocalReadTest(c.path, 0)
+			err = c.LocalReadTest(c.path, 0, nil)
 		case test == "localWrite":
 			fileCount = 1
-			err = c.LocalWriteTest(c.path, 0)
+			err = c.LocalWriteTest(c.path, 0, nil)
 
 		// Test on container
 		case test == "remoteRead":
 			fileCount = 1
-			err = c.RemoteReadTest("", 0)
+			err = c.RemoteReadTest("", 0, nil)
 		case test == "remoteWrite":
 			fileCount = 1
-			err = c.RemoteWriteTest("", 0)
+			err = c.RemoteWriteTest("", 0, nil)
 
 		case test == "multiFuseRead":
 			fileCount = int(c.fileCount)
@@ -257,13 +257,17 @@ func (c *Xbench) StartTests() {
 	log.Info("Xbench::StartTests : Stopping tests")
 }
 
-func (c *Xbench) LocalWriteTest(path string, fileNum int) error {
+func (c *Xbench) LocalWriteTest(path string, fileNum int, wg *sync.WaitGroup) error {
 	// Write to local disk
 	fileName := fmt.Sprintf("%s/testLocal_%d.data", path, fileNum)
 	log.Info("Xbench::LocalWriteTest : Writing to local file %s", fileName)
 
 	h, err := os.Create(fileName)
 	if err != nil {
+		if wg != nil {
+			wg.Done()
+		}
+
 		return err
 	}
 
@@ -271,6 +275,10 @@ func (c *Xbench) LocalWriteTest(path string, fileNum int) error {
 	for bytesWritten < c.dataSize {
 		n, err := h.Write(c.buff)
 		if err != nil {
+			if wg != nil {
+				wg.Done()
+			}
+
 			log.Err("Xbench::LocalWriteTest : Failed to write local file %s [%v]", fileName, err)
 			return err
 		}
@@ -278,16 +286,25 @@ func (c *Xbench) LocalWriteTest(path string, fileNum int) error {
 	}
 
 	_ = h.Close()
+
+	if wg != nil {
+		wg.Done()
+	}
+
 	return nil
 }
 
-func (c *Xbench) LocalReadTest(path string, fileNum int) error {
+func (c *Xbench) LocalReadTest(path string, fileNum int, wg *sync.WaitGroup) error {
 	// Read from local disk
 	fileName := fmt.Sprintf("%s/testLocal_%d.data", path, fileNum)
 	log.Info("Xbench::LocalReadTest : Reading from to local file %s", fileName)
 
 	h, err := os.Open(fileName)
 	if err != nil {
+		if wg != nil {
+			wg.Done()
+		}
+
 		return err
 	}
 
@@ -295,6 +312,10 @@ func (c *Xbench) LocalReadTest(path string, fileNum int) error {
 	for bytesRead < c.dataSize {
 		n, err := h.Read(c.buff)
 		if err != nil && err != io.EOF {
+			if wg != nil {
+				wg.Done()
+			}
+
 			log.Err("Xbench::LocalReadTest : Failed to read local file %s [%v]", fileName, err)
 			return err
 		}
@@ -302,10 +323,14 @@ func (c *Xbench) LocalReadTest(path string, fileNum int) error {
 	}
 
 	_ = h.Close()
+	if wg != nil {
+		wg.Done()
+	}
+
 	return nil
 }
 
-func (c *Xbench) RemoteWriteTest(_ string, fileNum int) error {
+func (c *Xbench) RemoteWriteTest(_ string, fileNum int, wg *sync.WaitGroup) error {
 	// Write to remote location
 	fileName := fmt.Sprintf("testRemote_%d.data", fileNum)
 	log.Info("Xbench::RemoteWriteTest : Writing to remote file %s", fileName)
@@ -315,6 +340,10 @@ func (c *Xbench) RemoteWriteTest(_ string, fileNum int) error {
 		Mode: 0666,
 	})
 	if err != nil {
+		if wg != nil {
+			wg.Done()
+		}
+
 		return err
 	}
 
@@ -326,6 +355,10 @@ func (c *Xbench) RemoteWriteTest(_ string, fileNum int) error {
 			Data:   c.buff,
 		})
 		if err != nil {
+			if wg != nil {
+				wg.Done()
+			}
+
 			log.Err("Xbench::RemoteWriteTest : Failed to write remote file %s [%v]", fileName, err)
 			return err
 		}
@@ -336,10 +369,14 @@ func (c *Xbench) RemoteWriteTest(_ string, fileNum int) error {
 		Handle: h,
 	})
 
+	if wg != nil {
+		wg.Done()
+	}
+
 	return nil
 }
 
-func (c *Xbench) RemoteReadTest(_ string, fileNum int) error {
+func (c *Xbench) RemoteReadTest(_ string, fileNum int, wg *sync.WaitGroup) error {
 	// Read from remote location
 	fileName := fmt.Sprintf("testRemote_%d.data", fileNum)
 	log.Info("Xbench::RemoteReadTest : Reading from remote file %s", fileName)
@@ -350,6 +387,10 @@ func (c *Xbench) RemoteReadTest(_ string, fileNum int) error {
 		Mode:  0666,
 	})
 	if err != nil {
+		if wg != nil {
+			wg.Done()
+		}
+
 		return err
 	}
 
@@ -361,6 +402,10 @@ func (c *Xbench) RemoteReadTest(_ string, fileNum int) error {
 			Data:   c.buff,
 		})
 		if err != nil && err != io.EOF {
+			if wg != nil {
+				wg.Done()
+			}
+
 			log.Err("Xbench::RemoteWriteTest : Failed to write remote file %s [%v]", fileName, err)
 			return err
 		}
@@ -370,16 +415,21 @@ func (c *Xbench) RemoteReadTest(_ string, fileNum int) error {
 	_ = c.NextComponent().CloseFile(internal.CloseFileOptions{
 		Handle: h,
 	})
+
+	if wg != nil {
+		wg.Done()
+	}
+
 	return nil
 }
 
-func (c *Xbench) MultiTest(path string, fileNum int, testFunc func(string, int) error) error {
+func (c *Xbench) MultiTest(path string, fileNum int, testFunc func(string, int, *sync.WaitGroup) error) error {
 	var err error = nil
 	wg := sync.WaitGroup{}
 
 	for i := 0; i < int(c.fileCount); i++ {
 		wg.Add(1)
-		go testFunc(path, i)
+		go testFunc(path, i, &wg)
 	}
 
 	wg.Wait()
