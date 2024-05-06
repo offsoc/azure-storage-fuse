@@ -128,7 +128,7 @@ func (c *Xbench) Configure(_ bool) error {
 	// Extract values from 'conf' and store them as you wish here
 
 	c.blockSize = (8 * _1MB)
-	c.dataSize = (25 * _1MB)
+	c.dataSize = (40 * 1024 * _1MB)
 	c.fileCount = 10
 
 	c.path = common.ExpandPath(conf.Path)
