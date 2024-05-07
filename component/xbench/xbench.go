@@ -228,25 +228,19 @@ func (c *Xbench) StartTests() {
 		case test == "remoteWrite":
 			err = c.RemoteWriteTest("", 0, nil)
 
-		case test == "multiFuseRead":
-		case test == "highFuseRead":
+		case test == "multiFuseRead" || test == "highFuseRead":
 			err = c.MultiTest(common.MountPath, fileCount, c.LocalReadTest)
-		case test == "multiFuseWrite":
-		case test == "highFuseWrite":
+		case test == "multiFuseWrite" || test == "highFuseWrite":
 			err = c.MultiTest(common.MountPath, fileCount, c.LocalWriteTest)
 
-		case test == "multiLocalRead":
-		case test == "highLocalRead":
+		case test == "multiLocalRead" || test == "highLocalRead":
 			err = c.MultiTest(c.path, fileCount, c.LocalReadTest)
-		case test == "multiLocalWrite":
-		case test == "highLocalWrite":
+		case test == "multiLocalWrite" || test == "highLocalWrite":
 			err = c.MultiTest(c.path, fileCount, c.LocalWriteTest)
 
-		case test == "multiRemoteRead":
-		case test == "highRemoteRead":
+		case test == "multiRemoteRead" || test == "highRemoteRead":
 			err = c.MultiTest("", fileCount, c.RemoteReadTest)
-		case test == "multiRemoteWrite":
-		case test == "highRemoteWrite":
+		case test == "multiRemoteWrite" || test == "highRemoteWrite":
 			err = c.MultiTest("", fileCount, c.RemoteWriteTest)
 
 		default:
