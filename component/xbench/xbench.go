@@ -40,6 +40,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 
@@ -172,7 +173,14 @@ func (c *Xbench) StartTests() {
 		"multiRemoteWrite",
 		"multiRemoteRead",
 
-		"highThreads",
+		"highFuseWrite",
+		"highFuseRead",
+
+		"highLocalWrite",
+		"highLocalRead",
+
+		"highRemoteWrite",
+		"highRemoteRead",
 	}
 
 	var err error
@@ -192,64 +200,55 @@ func (c *Xbench) StartTests() {
 			log.Err("Xbench::StartTests : Failed to clear kernel cache [%s]", err.Error())
 		}
 
+		if strings.Contains(test, "high") {
+			fileCount = 32
+		} else if strings.Contains(test, "multi") {
+			fileCount = 10
+		} else {
+			fileCount = 1
+		}
 		startTime := time.Now()
 
 		switch {
 		// Test on mount path itself
 		case test == "fuseRead":
-			fileCount = 1
 			err = c.LocalReadTest(common.MountPath, 0, nil)
 		case test == "fuseWrite":
-			fileCount = 1
 			err = c.LocalWriteTest(common.MountPath, 0, nil)
 
 		// Test on Local path
 		case test == "localRead":
-			fileCount = 1
 			err = c.LocalReadTest(c.path, 0, nil)
 		case test == "localWrite":
-			fileCount = 1
 			err = c.LocalWriteTest(c.path, 0, nil)
 
 		// Test on container
 		case test == "remoteRead":
-			fileCount = 1
 			err = c.RemoteReadTest("", 0, nil)
 		case test == "remoteWrite":
-			fileCount = 1
 			err = c.RemoteWriteTest("", 0, nil)
 
 		case test == "multiFuseRead":
-			fileCount = int(c.fileCount)
-			err = c.MultiTest(common.MountPath, 0, c.LocalReadTest)
+		case test == "highFuseRead":
+			err = c.MultiTest(common.MountPath, fileCount, c.LocalReadTest)
 		case test == "multiFuseWrite":
-			fileCount = int(c.fileCount)
-			err = c.MultiTest(common.MountPath, 0, c.LocalWriteTest)
+		case test == "highFuseWrite":
+			err = c.MultiTest(common.MountPath, fileCount, c.LocalWriteTest)
 
 		case test == "multiLocalRead":
-			fileCount = int(c.fileCount)
-			err = c.MultiTest(c.path, 0, c.LocalReadTest)
+		case test == "highLocalRead":
+			err = c.MultiTest(c.path, fileCount, c.LocalReadTest)
 		case test == "multiLocalWrite":
-			fileCount = int(c.fileCount)
-			err = c.MultiTest(c.path, 0, c.LocalWriteTest)
+		case test == "highLocalWrite":
+			err = c.MultiTest(c.path, fileCount, c.LocalWriteTest)
 
 		case test == "multiRemoteRead":
-			fileCount = int(c.fileCount)
-			err = c.MultiTest("", 0, c.RemoteReadTest)
+		case test == "highRemoteRead":
+			err = c.MultiTest("", fileCount, c.RemoteReadTest)
 		case test == "multiRemoteWrite":
-			fileCount = int(c.fileCount)
-			err = c.MultiTest("", 0, c.RemoteWriteTest)
+		case test == "highRemoteWrite":
+			err = c.MultiTest("", fileCount, c.RemoteWriteTest)
 
-		case test == "highThreads":
-			c.fileCount = 32
-			fileCount = int(c.fileCount)
-			_ = c.MultiTest(common.MountPath, 0, c.LocalWriteTest)
-			_ = c.MultiTest(common.MountPath, 0, c.LocalReadTest)
-			_ = c.MultiTest(c.path, 0, c.LocalWriteTest)
-			_ = c.MultiTest(c.path, 0, c.LocalReadTest)
-			_ = c.MultiTest("", 0, c.RemoteWriteTest)
-			_ = c.MultiTest("", 0, c.RemoteReadTest)
-			err = nil
 		default:
 			log.Err("Xbench::StartTests : Invalid test name %s", test)
 		}
@@ -435,11 +434,11 @@ func (c *Xbench) RemoteReadTest(_ string, fileNum int, wg *sync.WaitGroup) error
 	return nil
 }
 
-func (c *Xbench) MultiTest(path string, fileNum int, testFunc func(string, int, *sync.WaitGroup) error) error {
+func (c *Xbench) MultiTest(path string, fileCnt int, testFunc func(string, int, *sync.WaitGroup) error) error {
 	var err error = nil
 	wg := sync.WaitGroup{}
 
-	for i := 0; i < int(c.fileCount); i++ {
+	for i := 0; i < fileCnt; i++ {
 		wg.Add(1)
 		go testFunc(path, i, &wg)
 	}
