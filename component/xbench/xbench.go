@@ -171,6 +171,8 @@ func (c *Xbench) StartTests() {
 
 		"multiRemoteWrite",
 		"multiRemoteRead",
+
+		"highThreads",
 	}
 
 	var err error
@@ -238,6 +240,15 @@ func (c *Xbench) StartTests() {
 			fileCount = int(c.fileCount)
 			err = c.MultiTest("", 0, c.RemoteWriteTest)
 
+		case test == "highThreads":
+			fileCount = 32
+			_ = c.MultiTest(common.MountPath, 0, c.LocalWriteTest)
+			_ = c.MultiTest(common.MountPath, 0, c.LocalReadTest)
+			_ = c.MultiTest(c.path, 0, c.LocalWriteTest)
+			_ = c.MultiTest(c.path, 0, c.LocalReadTest)
+			_ = c.MultiTest("", 0, c.RemoteWriteTest)
+			_ = c.MultiTest("", 0, c.RemoteReadTest)
+			err = nil
 		default:
 			log.Err("Xbench::StartTests : Invalid test name %s", test)
 		}
