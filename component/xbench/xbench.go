@@ -241,7 +241,8 @@ func (c *Xbench) StartTests() {
 			err = c.MultiTest("", 0, c.RemoteWriteTest)
 
 		case test == "highThreads":
-			fileCount = 32
+			c.fileCount = 32
+			fileCount = int(c.fileCount)
 			_ = c.MultiTest(common.MountPath, 0, c.LocalWriteTest)
 			_ = c.MultiTest(common.MountPath, 0, c.LocalReadTest)
 			_ = c.MultiTest(c.path, 0, c.LocalWriteTest)
