@@ -190,9 +190,16 @@ func (c *Xbench) StartTests() {
 	log.Info("Xbench::StartTests : Starting tests")
 	fileCount := 0
 	for _, test := range tests {
-		log.Info("Xbench::StartTests : Starting tests [%v]", test)
+		fileCount = 1
+		if strings.Contains(test, "high") {
+			fileCount = 32
+		} else if strings.Contains(test, "multi") {
+			fileCount = 10
+		}
 
-		script := exec.Command("sysctl", "-w", "vm.drop_caches=3")
+		log.Info("Xbench::StartTests : Starting tests [%v : %v]", test, fileCount)
+
+		script := exec.Command("sudo", "sysctl", "-w", "vm.drop_caches=3")
 		script.Stdout = os.Stdout
 		script.Stderr = os.Stdout
 
@@ -200,13 +207,6 @@ func (c *Xbench) StartTests() {
 			log.Err("Xbench::StartTests : Failed to clear kernel cache [%s]", err.Error())
 		}
 
-		if strings.Contains(test, "high") {
-			fileCount = 32
-		} else if strings.Contains(test, "multi") {
-			fileCount = 10
-		} else {
-			fileCount = 1
-		}
 		startTime := time.Now()
 
 		switch {
@@ -261,7 +261,7 @@ func (c *Xbench) StartTests() {
 			timeTaken := runTime.Seconds()
 			// log.Info("Xbench::StartTests : Test %s completed in %v seconds for %v bytes", test, timeTaken, (c.dataSize * uint64(fileCount)))
 			speed := float64((c.dataSize/(_1MB))*uint64(fileCount)) / float64(timeTaken)
-			log.Info("Xbench::StartTests : Test %s [%v MB in %v seconds, speed : %.2f MB/s]", test, (c.dataSize/(_1MB))*uint64(fileCount), timeTaken, speed)
+			log.Info("Xbench::StartTests : >>>>> Test %s [%v MB in %v seconds, speed : %.2f MB/s]", test, (c.dataSize/(_1MB))*uint64(fileCount), timeTaken, speed)
 		}
 	}
 
