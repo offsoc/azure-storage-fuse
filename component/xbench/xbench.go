@@ -42,7 +42,6 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/Azure/azure-storage-fuse/v2/common"
@@ -274,7 +273,7 @@ func (c *Xbench) LocalWriteTest(path string, fileNum int, wg *sync.WaitGroup) er
 	fileName := fmt.Sprintf("%s/testLocal_%d.data", path, fileNum)
 	log.Info("Xbench::LocalWriteTest : Writing to local file %s", fileName)
 
-	h, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|syscall.O_DIRECT, 0666)
+	h, err := os.Create(fileName)
 	if err != nil {
 		if wg != nil {
 			wg.Done()
@@ -311,7 +310,7 @@ func (c *Xbench) LocalReadTest(path string, fileNum int, wg *sync.WaitGroup) err
 	fileName := fmt.Sprintf("%s/testLocal_%d.data", path, fileNum)
 	log.Info("Xbench::LocalReadTest : Reading from to local file %s", fileName)
 
-	h, err := os.OpenFile(fileName, os.O_RDONLY|syscall.O_DIRECT, 0666)
+	h, err := os.Open(fileName)
 	if err != nil {
 		if wg != nil {
 			wg.Done()
