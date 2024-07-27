@@ -17,18 +17,15 @@ parameters:
 
 steps:  
   - script: |
-      $(WORK_DIR)/blobfuse2 gen-test-config --config-file=$(WORK_DIR)/testdata/config/azure_data_integrity.yaml --container-name=${{ parameters.container }} --temp-path=${{ parameters.temp_dir }} --output-file=${{ parameters.config_file }}
+      $(WORK_DIR)/blobfuse2 gen-test-config --config-file=$(WORK_DIR)/testdata/config/azure_data_integrity.yaml --container-name=${{ parameters.container }} --temp-path=${{ parameters.temp_dir }} --output-file=dataInegrityConfig.yaml
     displayName: 'Create Config File for Data Integrity checks'
     env:
       NIGHTLY_STO_ACC_NAME: ${{ parameters.account_name }}
       NIGHTLY_STO_ACC_KEY: ${{ parameters.account_key }}
-      ACCOUNT_TYPE: ${{ parameters.account_type }}
-      ACCOUNT_ENDPOINT: ${{ parameters.account_endpoint }}
-      VERBOSE_LOG: ${{ parameters.verbose_log }}
     continueOnError: false
 
   - script:
-      cat ${{ parameters.config_file }}
+      cat dataInegrityConfig.yaml
     displayName: 'Print config file'
 
   - template: 'mount.yml'
@@ -38,7 +35,11 @@ steps:
       temp_dir: ${{ parameters.temp_dir }}
       mountStep: 
         script: |
-          $(WORK_DIR)/blobfuse2 mount ${{ parameters.mount_dir }} --config-file=${{ parameters.config_file }} --default-working-dir=$(WORK_DIR) --block-cache --block-cache-block-size=${{ parameters.block_size }} --container-name=${{ parameters.container }}
+          $(WORK_DIR)/blobfuse2 mount ${{ parameters.mount_dir }} --config-file=dataInegrityConfig.yaml --default-working-dir=$(WORK_DIR) --block-cache --block-cache-block-size=${{ parameters.block_size }} --container-name=${{ parameters.container }}
+
+  - script: |
+      ls -l ${{ parameters.mount_dir }}
+    displayName: 'List mount path'
 
   - script: |
       $(WORK_DIR)/blobfuse2 unmount all
