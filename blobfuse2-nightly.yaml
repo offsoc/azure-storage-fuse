@@ -1459,7 +1459,7 @@ stages:
                   fi
                 displayName: 'Install fuse'
 
-          - template: 'azure-pipeline-templates/e2e-tests-data-integrity'
+          - template: 'azure-pipeline-templates/e2e-tests-data-integrity.yml'
             parameters:
               account_name: $(NIGHTLY_STO_BLOB_ACC_NAME)
               account_key: $(NIGHTLY_STO_BLOB_ACC_KEY)
@@ -1469,7 +1469,7 @@ stages:
               mount_dir: $(MOUNT_DIR)
               block_size: 1
 
-          - template: 'azure-pipeline-templates/e2e-tests-data-integrity'
+          - template: 'azure-pipeline-templates/e2e-tests-data-integrity.yml'
             parameters:
               account_name: $(NIGHTLY_STO_BLOB_ACC_NAME)
               account_key: $(NIGHTLY_STO_BLOB_ACC_KEY)
@@ -1479,7 +1479,7 @@ stages:
               mount_dir: $(MOUNT_DIR)
               block_size: 2
 
-          - template: 'azure-pipeline-templates/e2e-tests-data-integrity'
+          - template: 'azure-pipeline-templates/e2e-tests-data-integrity.yml'
             parameters:
               account_name: $(NIGHTLY_STO_BLOB_ACC_NAME)
               account_key: $(NIGHTLY_STO_BLOB_ACC_KEY)
@@ -1489,7 +1489,7 @@ stages:
               mount_dir: $(MOUNT_DIR)
               block_size: 4
 
-          - template: 'azure-pipeline-templates/e2e-tests-data-integrity'
+          - template: 'azure-pipeline-templates/e2e-tests-data-integrity.yml'
             parameters:
               account_name: $(NIGHTLY_STO_BLOB_ACC_NAME)
               account_key: $(NIGHTLY_STO_BLOB_ACC_KEY)
@@ -1499,7 +1499,7 @@ stages:
               mount_dir: $(MOUNT_DIR)
               block_size: 8                            
 
-          - template: 'azure-pipeline-templates/e2e-tests-data-integrity'
+          - template: 'azure-pipeline-templates/e2e-tests-data-integrity.yml'
             parameters:
               account_name: $(NIGHTLY_STO_BLOB_ACC_NAME)
               account_key: $(NIGHTLY_STO_BLOB_ACC_KEY)
@@ -1509,7 +1509,7 @@ stages:
               mount_dir: $(MOUNT_DIR)
               block_size: 16
 
-          - template: 'azure-pipeline-templates/e2e-tests-data-integrity'
+          - template: 'azure-pipeline-templates/e2e-tests-data-integrity.yml'
             parameters:
               account_name: $(NIGHTLY_STO_BLOB_ACC_NAME)
               account_key: $(NIGHTLY_STO_BLOB_ACC_KEY)
