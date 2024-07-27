@@ -23,6 +23,10 @@ steps:
       echo "##vso[task.setvariable variable=AZURE_STORAGE_ACCESS_KEY]$AZURE_STORAGE_ACCESS_KEY"
     displayName: 'Export Creds'
 
+  - script:
+      echo $AZURE_STORAGE_ACCOUNT
+    displayName: "Validate Env"
+    
   - template: 'mount.yml'
     parameters:
       working_dir: $(WORK_DIR)
