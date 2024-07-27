@@ -55,9 +55,12 @@ steps:
 
   - script: |
       # Check sparse files
-      md5sum ${{ parameters.mount_dir }}/sparse_file_* > remote_sparse.md5
-      md5sum ${{ parameters.temp_dir }}/sparse_file_* > local_sparse.md5
-      cat *.md5
+      cd ${{ parameters.mount_dir }}
+      md5sum -b sparse_file_* > $(WORK_DIR)/remote_sparse.md5
+      cd ${{ parameters.temp_dir }}
+      md5sum -b sparse_file_* > $(WORK_DIR)/local_sparse.md5
+      cd $(WORK_DIR)
+      cat *sparse*.md5
       diff remote_sparse.md5 local_sparse.md5
       if [ $? -ne 0 ]; then
         exit 1
@@ -69,17 +72,73 @@ steps:
       rm -rf ${{ parameters.temp_dir }}/sparse_file_*
       rm -rf ${{ parameters.mount_dir }}/sparse_file_*
     displayName: 'Cleanup sparse files'
-  # ----------------------------------------------------------------------------------------------------------------
 
-
-  # ----------------------------------------------------------------------------------------------------------------
-  # End the test now
   - script: |
       $(WORK_DIR)/blobfuse2 unmount all
     displayName: 'Unmount Blobfuse2'
 
+  # End the test now
   - template: 'cleanup.yml'
     parameters:
       working_dir: $(WORK_DIR)
       mount_dir: ${{ parameters.mount_dir }}
-      temp_dir: ${{ parameters.temp_dir }}
+      temp_dir: ${{ parameters.temp_dir }}        
+  
+  
+  # ----------------------------------------------------------------------------------------------------------------
+  # Sparse files wit front hole testing
+  - script: |
+      $(WORK_DIR)/blobfuse2 mount ${{ parameters.mount_dir }} --config-file=dataInegrityConfig.yaml --default-working-dir=$(WORK_DIR) --block-cache --block-cache-block-size=${{ parameters.block_size }} --container-name=${{ parameters.container }} --block-cache-pool-size=100
+    displayName: "Mount Blobfuse2 : Sparse file with front hole test"
+
+  - script: |
+      # Create sparse files in remote directory and local directory
+      for i in {10,50,100,1024,1048576,5242880,52428800,1073741824}
+      do
+        python3 $(WORK_DIR)/test/dataIntegrity/create_file.py front_hole ${{ parameters.mount_dir }}/front_hole_$i $i 3
+        python3 $(WORK_DIR)/test/dataIntegrity/create_file.py front_hole ${{ parameters.temp_dir }}/front_hole_$i $i 3
+      done
+      ls -l ${{ parameters.mount_dir }}/front_hole_*
+      ls -l ${{ parameters.temp_dir }}/front_hole_*
+    displayName: 'Create sparse files with front hole'
+
+  - script: |
+      $(WORK_DIR)/blobfuse2 unmount all
+    displayName: "Un-Mount Blobfuse2 : Sparse file with front hole test"
+
+  - script: |
+      $(WORK_DIR)/blobfuse2 mount ${{ parameters.mount_dir }} --config-file=dataInegrityConfig.yaml --default-working-dir=$(WORK_DIR) --block-cache --block-cache-block-size=${{ parameters.block_size }} --container-name=${{ parameters.container }}
+    displayName: "Re-Mount Blobfuse2 : Sparse file with front hole test"
+
+  - script: |
+      # Check sparse files with front hole
+      cd ${{ parameters.mount_dir }}
+      md5sum -b front_hole_* > $(WORK_DIR)/remote_front_hole.md5
+      cd ${{ parameters.temp_dir }}
+      md5sum -b front_hole_* > $(WORK_DIR)/local_front_hole.md5
+      cd $(WORK_DIR)
+      cat *front_hole*.md5
+      diff remote_front_hole.md5 local_front_hole.md5
+      if [ $? -ne 0 ]; then
+        exit 1
+      fi
+    displayName: 'Validate sparse files with front hole'
+
+  - script: |
+      rm -rf *_front_hole*
+      rm -rf ${{ parameters.temp_dir }}/front_hole_*
+      rm -rf ${{ parameters.mount_dir }}/front_hole_*
+    displayName: 'Cleanup sparse files with front hole'
+
+  - script: |
+      $(WORK_DIR)/blobfuse2 unmount all
+    displayName: 'Unmount Blobfuse2'
+    
+  # End the test now
+  - template: 'cleanup.yml'
+    parameters:
+      working_dir: $(WORK_DIR)
+      mount_dir: ${{ parameters.mount_dir }}
+      temp_dir: ${{ parameters.temp_dir }}  
+
+  # ----------------------------------------------------------------------------------------------------------------

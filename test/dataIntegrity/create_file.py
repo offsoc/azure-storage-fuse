@@ -7,7 +7,7 @@ class TestParams:
         self.file_size = file_size
         self.write_length = write_length
 
-# Method to create a sparse file
+# Method to create a sparse file with hole in middle
 def test_create_sparse(params):
     data_to_write = b'A' * params.write_length
 
@@ -22,6 +22,18 @@ def test_create_sparse(params):
         # Write data at the end of the file
         file.write(data_to_write)
 
+
+# Method to create a sparse file with hole in the begining
+def test_create_front_hole(params):
+    data_to_write = b'A' * params.write_length
+
+    # Create a new file and write the data
+    with open(params.file_name, 'wb') as file:
+        # Seek to the end of the file
+        file.seek(params.file_size - params.write_length)
+        
+        # Write data at the end of the file
+        file.write(data_to_write)
 
 # Main method to simulate all test cases
 if __name__ == "__main__":
