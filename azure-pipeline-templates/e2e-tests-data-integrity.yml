@@ -31,7 +31,7 @@ steps:
   # ----------------------------------------------------------------------------------------------------------------
   # Sparse file testing
   - script: |
-      $(WORK_DIR)/blobfuse2 mount ${{ parameters.mount_dir }} --config-file=dataInegrityConfig.yaml --default-working-dir=$(WORK_DIR) --block-cache --block-cache-block-size=${{ parameters.block_size }} --container-name=${{ parameters.container }}
+      $(WORK_DIR)/blobfuse2 mount ${{ parameters.mount_dir }} --config-file=dataInegrityConfig.yaml --default-working-dir=$(WORK_DIR) --block-cache --block-cache-block-size=${{ parameters.block_size }} --container-name=${{ parameters.container }} --block-cache-pool-size=100
     displayName: "Mount Blobfuse2 : Sparse file test"
 
     - script: |
@@ -55,6 +55,7 @@ steps:
       # Check sparse files
       md5sum ${{ parameters.mount_dir }}/sparse_file_* > remote_sparse.md5
       md5sum ${{ parameters.temp_dir }}/sparse_file_* > local_sparse.md5
+      cat *.md5
       diff remote_sparse.md5 local_sparse.md5
       if [ $? -ne 0 ]; then
         exit 1
