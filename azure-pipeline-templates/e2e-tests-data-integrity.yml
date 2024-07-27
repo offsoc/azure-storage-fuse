@@ -41,11 +41,13 @@ steps:
         python3 $(WORK_DIR)/test/dataIntegrity/create_file.py sparse ${{ parameters.mount_dir }}/sparse_file_$i $i 3
         python3 $(WORK_DIR)/test/dataIntegrity/create_file.py sparse ${{ parameters.temp_dir }}/sparse_file_$i $i 3
       done
+      ls -l ${{ parameters.mount_dir }}/sparse_file_*
+      ls -l ${{ parameters.temp_dir }}/sparse_file_*
     displayName: 'Create sparse files'
 
   - script: |
       $(WORK_DIR)/blobfuse2 unmount all
-    displayName: 'Unmount Blobfuse2'
+    displayName: "Un-Mount Blobfuse2 : Sparse file test"
 
   - script: |
       $(WORK_DIR)/blobfuse2 mount ${{ parameters.mount_dir }} --config-file=dataInegrityConfig.yaml --default-working-dir=$(WORK_DIR) --block-cache --block-cache-block-size=${{ parameters.block_size }} --container-name=${{ parameters.container }}
@@ -60,7 +62,7 @@ steps:
       if [ $? -ne 0 ]; then
         exit 1
       fi
-    displayName: 'Check sparse files'
+    displayName: 'Validate sparse files'
 
   - script: |
       rm -rf *_sparse*
