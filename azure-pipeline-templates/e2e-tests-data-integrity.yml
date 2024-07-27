@@ -1,0 +1,37 @@
+parameters:
+  - name: account_name
+    type: string
+  - name: account_key
+    type: string
+  - name: account_type
+    type: string
+  - name: container
+    type: string
+  - name: temp_dir
+    type: string
+  - name: mount_dir
+    type: string  
+  - name: block_size
+    type: number  
+
+
+steps:    
+  - template: 'mount.yml'
+    parameters:
+      working_dir: $(WORK_DIR)
+      mount_dir: ${{ parameters.mount_dir }}
+      temp_dir: ${{ parameters.temp_dir }}
+      prefix: "DataIntegrity"
+      mountStep: 
+        script: |
+          $(WORK_DIR)/blobfuse2 mount ${{ parameters.mount_dir }} --default-working-dir=$(WORK_DIR) --block-cache --block-cache-block-size=${{ parameters.block_size }}
+
+  - script: |
+      $(WORK_DIR)/blobfuse2 unmount all
+    displayName: 'Unmount Blobfuse2'
+
+  - template: 'cleanup.yml'
+    parameters:
+      working_dir: $(WORK_DIR)
+      mount_dir: ${{ parameters.mount_dir }}
+      temp_dir: ${{ parameters.temp_dir }}
