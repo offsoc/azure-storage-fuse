@@ -24,7 +24,10 @@ steps:
       prefix: "DataIntegrity"
       mountStep: 
         script: |
-          $(WORK_DIR)/blobfuse2 mount ${{ parameters.mount_dir }} --default-working-dir=$(WORK_DIR) --block-cache --block-cache-block-size=${{ parameters.block_size }}
+          $(WORK_DIR)/blobfuse2 mount ${{ parameters.mount_dir }} --default-working-dir=$(WORK_DIR) --block-cache --block-cache-block-size=${{ parameters.block_size }} --container-name=${{ parameters.container }}
+    env:
+      NIGHTLY_STO_ACC_NAME: ${{ parameters.account_name }}
+      NIGHTLY_STO_ACC_KEY: ${{ parameters.account_key }}
 
   - script: |
       $(WORK_DIR)/blobfuse2 unmount all
