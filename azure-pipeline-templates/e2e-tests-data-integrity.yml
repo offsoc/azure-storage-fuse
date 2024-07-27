@@ -16,26 +16,29 @@ parameters:
 
 
 steps:  
-  - script:
-      AZURE_STORAGE_ACCOUNT=${{ parameters.account_name }}
-      AZURE_STORAGE_ACCESS_KEY=${{ parameters.account_key }}
-      echo "##vso[task.setvariable variable=AZURE_STORAGE_ACCOUNT]$AZURE_STORAGE_ACCOUNT"
-      echo "##vso[task.setvariable variable=AZURE_STORAGE_ACCESS_KEY]$AZURE_STORAGE_ACCESS_KEY"
-    displayName: 'Export Creds'
+  - script: |
+      $(WORK_DIR)/blobfuse2 gen-test-config --config-file=$(WORK_DIR)/testdata/config/azure_data_integrity.yaml --container-name=${{ parameters.container }} --temp-path=${{ parameters.temp_dir }} --output-file=${{ parameters.config_file }}
+    displayName: 'Create Config File for Data Integrity checks'
+    env:
+      NIGHTLY_STO_ACC_NAME: ${{ parameters.account_name }}
+      NIGHTLY_STO_ACC_KEY: ${{ parameters.account_key }}
+      ACCOUNT_TYPE: ${{ parameters.account_type }}
+      ACCOUNT_ENDPOINT: ${{ parameters.account_endpoint }}
+      VERBOSE_LOG: ${{ parameters.verbose_log }}
+    continueOnError: false
 
   - script:
-      echo $AZURE_STORAGE_ACCOUNT
-    displayName: "Validate Env"
-    
+      cat ${{ parameters.config_file }}
+    displayName: 'Print config file'
+
   - template: 'mount.yml'
     parameters:
       working_dir: $(WORK_DIR)
       mount_dir: ${{ parameters.mount_dir }}
       temp_dir: ${{ parameters.temp_dir }}
-      prefix: "DataIntegrity"
       mountStep: 
         script: |
-          $(WORK_DIR)/blobfuse2 mount ${{ parameters.mount_dir }} --default-working-dir=$(WORK_DIR) --block-cache --block-cache-block-size=${{ parameters.block_size }} --container-name=${{ parameters.container }}
+          $(WORK_DIR)/blobfuse2 mount ${{ parameters.mount_dir }} --config-file=${{ parameters.config_file }} --default-working-dir=$(WORK_DIR) --block-cache --block-cache-block-size=${{ parameters.block_size }} --container-name=${{ parameters.container }}
 
   - script: |
       $(WORK_DIR)/blobfuse2 unmount all

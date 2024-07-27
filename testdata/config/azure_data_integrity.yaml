@@ -1,0 +1,9 @@
+logging:
+  level: log_debug
+  file-path: "blobfuse2-logs.txt"
+  type: base
+
+azstorage:
+  account-name: { NIGHTLY_STO_ACC_NAME }
+  account-key: { NIGHTLY_STO_ACC_KEY }
+  mode: key
