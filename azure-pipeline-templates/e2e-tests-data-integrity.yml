@@ -15,7 +15,14 @@ parameters:
     type: number  
 
 
-steps:    
+steps:  
+  - script:
+      AZURE_STORAGE_ACCOUNT=${{ parameters.account_name }}
+      AZURE_STORAGE_ACCESS_KEY=${{ parameters.account_key }}
+      echo "##vso[task.setvariable variable=AZURE_STORAGE_ACCOUNT]$AZURE_STORAGE_ACCOUNT"
+      echo "##vso[task.setvariable variable=AZURE_STORAGE_ACCESS_KEY]$AZURE_STORAGE_ACCESS_KEY"
+    displayName: 'Export Creds'
+
   - template: 'mount.yml'
     parameters:
       working_dir: $(WORK_DIR)
@@ -25,9 +32,6 @@ steps:
       mountStep: 
         script: |
           $(WORK_DIR)/blobfuse2 mount ${{ parameters.mount_dir }} --default-working-dir=$(WORK_DIR) --block-cache --block-cache-block-size=${{ parameters.block_size }} --container-name=${{ parameters.container }}
-    env:
-      NIGHTLY_STO_ACC_NAME: ${{ parameters.account_name }}
-      NIGHTLY_STO_ACC_KEY: ${{ parameters.account_key }}
 
   - script: |
       $(WORK_DIR)/blobfuse2 unmount all
