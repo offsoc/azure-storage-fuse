@@ -17,6 +17,12 @@ parameters:
 
 steps:  
   - script: |
+      sudo apt-get update --fix-missing
+      sudo apt-get install python3-setuptools -y
+      sudo apt install python3-pip -y
+    displayName: "Setup test environemnt"
+    
+  - script: |
       $(WORK_DIR)/blobfuse2 gen-test-config --config-file=$(WORK_DIR)/testdata/config/azure_data_integrity.yaml --container-name=${{ parameters.container }} --temp-path=${{ parameters.temp_dir }} --output-file=dataInegrityConfig.yaml
     displayName: 'Create Config File for Data Integrity checks'
     env:
