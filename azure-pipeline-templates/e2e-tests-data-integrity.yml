@@ -41,11 +41,14 @@ steps:
     displayName: "Mount Blobfuse2 : Sparse file test"
 
   - script: |
-      # Create sparse files in remote directory and local directory
+      rm -rf ${{ parameters.temp_dir }}/*sparse*
+      rm -rf ${{ parameters.mount_dir }}/*sparse*
+      
       for i in {10,13,50,100,973,1024,1048576,1048590,5242880,52428800,52428968,1073741824}
       do
         python3 $(WORK_DIR)/test/dataIntegrity/integrity_script.py sparse ${{ parameters.mount_dir }} ${{ parameters.temp_dir }} $i 3
       done
+      
       echo "-----------------  Print Remote Files -----------------------------------"
       ls -l ${{ parameters.mount_dir }}/sparse_*
       echo "-----------------  Print Local Files -----------------------------------"
@@ -66,13 +69,16 @@ steps:
       cd ${{ parameters.mount_dir }}
       ls -l sparse_*
       md5sum -b sparse_* > $(WORK_DIR)/remote_sparse.md5
+      
       echo "-----------------  Print Local Files -----------------------------------"
       cd ${{ parameters.temp_dir }}
       ls -l sparse_*
       md5sum -b sparse_* > $(WORK_DIR)/local_sparse.md5
+      
       echo "-----------------  Validate checksum -----------------------------------"
       cd $(WORK_DIR)
       cat *sparse*.md5
+      
       diff remote_sparse.md5 local_sparse.md5
       if [ $? -ne 0 ]; then
         exit 1
@@ -104,11 +110,14 @@ steps:
     displayName: "Mount Blobfuse2 : Sparse file with front hole test"
 
   - script: |
-      # Create sparse files in remote directory and local directory
+      rm -rf ${{ parameters.temp_dir }}/*front_hole*
+      rm -rf ${{ parameters.mount_dir }}/*front_hole*
+
       for i in {10,13,50,100,973,1024,1048576,1048590,5242880,52428800,52428968,1073741824}
       do
         python3 $(WORK_DIR)/test/dataIntegrity/integrity_script.py front_hole ${{ parameters.mount_dir }} ${{ parameters.temp_dir }} $i 3
       done
+
       echo "-----------------  Print Remote Files -----------------------------------"
       ls -l ${{ parameters.mount_dir }}/front_hole_*
       echo "-----------------  Print Locak Files -----------------------------------"
@@ -129,13 +138,16 @@ steps:
       cd ${{ parameters.mount_dir }}
       md5sum -b front_hole_* > $(WORK_DIR)/remote_front_hole.md5
       ls -l front_hole_*
+      
       echo "-----------------  Print Local Files -----------------------------------"
       cd ${{ parameters.temp_dir }}
       ls -l front_hole_*
       md5sum -b front_hole_* > $(WORK_DIR)/local_front_hole.md5
+      
       echo "-----------------  Validate checksum -----------------------------------"
       cd $(WORK_DIR)
       cat *front_hole*.md5
+      
       diff remote_front_hole.md5 local_front_hole.md5
       if [ $? -ne 0 ]; then
         exit 1
