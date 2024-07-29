@@ -13,8 +13,7 @@ class TestParams:
 def read_all_data(file_path):
     with open(file_path, 'r') as file:
         data = file.read()
-        num_bytes = len(data.encode('utf-8'))  # Calculate the number of bytes
-    return data, num_bytes
+    return data, len(data)
 
 # Method to create a sparse file with hole in middle
 def test_create_sparse(params):
@@ -77,16 +76,13 @@ def test_write_data(params):
     written = 0
     # Create a new file and write the data
     with open(remote_file_name, 'wb') as remote_file, open(local_file_name, 'wb') as local_file :
-        # Write data at the start of the file
-        remote_file.write(data_to_write)
-        local_file.write(data_to_write)
+        while written < params.file_size:
+            # Write data at the start of the file
+            remote_file.write(data_to_write)
+            local_file.write(data_to_write)
 
-        written += params.write_length
-        
-        if written >= params.file_size:
-            return
-
-
+            written += params.write_length
+       
 # Main method to simulate all test cases
 if __name__ == "__main__":
     # File-name, File-Size, Write Length are input to this script
