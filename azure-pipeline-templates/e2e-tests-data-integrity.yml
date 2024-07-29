@@ -42,15 +42,14 @@ steps:
 
   - script: |
       # Create sparse files in remote directory and local directory
-      for i in {10,50,100,1024,1048576,5242880,52428800,1073741824}
+      for i in {10,13,50,100,973,1024,1048576,1048590,5242880,52428800,52428968,1073741824}
       do
-        python3 $(WORK_DIR)/test/dataIntegrity/integrity_script.py sparse ${{ parameters.mount_dir }}/sparse_file_$i $i 3
-        python3 $(WORK_DIR)/test/dataIntegrity/integrity_script.py sparse ${{ parameters.temp_dir }}/sparse_file_$i $i 3
+        python3 $(WORK_DIR)/test/dataIntegrity/integrity_script.py sparse ${{ parameters.mount_dir }} ${{ parameters.temp_dir }} $i 3
       done
       echo "-----------------  Print Remote Files -----------------------------------"
-      ls -l ${{ parameters.mount_dir }}/sparse_file_*
+      ls -l ${{ parameters.mount_dir }}/sparse_*
       echo "-----------------  Print Local Files -----------------------------------"
-      ls -l ${{ parameters.temp_dir }}/sparse_file_*
+      ls -l ${{ parameters.temp_dir }}/sparse_*
     displayName: 'Create sparse files'
 
   - script: |
@@ -65,12 +64,12 @@ steps:
       # Check sparse files
       echo "-----------------  Print Remote Files -----------------------------------"
       cd ${{ parameters.mount_dir }}
-      ls -l sparse_file_*
-      md5sum -b sparse_file_* > $(WORK_DIR)/remote_sparse.md5
+      ls -l sparse_*
+      md5sum -b sparse_* > $(WORK_DIR)/remote_sparse.md5
       echo "-----------------  Print Local Files -----------------------------------"
       cd ${{ parameters.temp_dir }}
-      ls -l sparse_file_*
-      md5sum -b sparse_file_* > $(WORK_DIR)/local_sparse.md5
+      ls -l sparse_*
+      md5sum -b sparse_* > $(WORK_DIR)/local_sparse.md5
       echo "-----------------  Validate checksum -----------------------------------"
       cd $(WORK_DIR)
       cat *sparse*.md5
@@ -81,9 +80,9 @@ steps:
     displayName: 'Validate sparse files'
 
   - script: |
-      rm -rf *_sparse*
-      rm -rf ${{ parameters.temp_dir }}/sparse_file_*
-      rm -rf ${{ parameters.mount_dir }}/sparse_file_*
+      rm -rf *sparse*
+      rm -rf ${{ parameters.temp_dir }}/sparse_*
+      rm -rf ${{ parameters.mount_dir }}/sparse_*
     displayName: 'Cleanup sparse files'
 
   - script: |
@@ -106,10 +105,9 @@ steps:
 
   - script: |
       # Create sparse files in remote directory and local directory
-      for i in {10,50,100,1024,1048576,5242880,52428800,1073741824}
+      for i in {10,13,50,100,973,1024,1048576,1048590,5242880,52428800,52428968,1073741824}
       do
-        python3 $(WORK_DIR)/test/dataIntegrity/integrity_script.py front_hole ${{ parameters.mount_dir }}/front_hole_$i $i 3
-        python3 $(WORK_DIR)/test/dataIntegrity/integrity_script.py front_hole ${{ parameters.temp_dir }}/front_hole_$i $i 3
+        python3 $(WORK_DIR)/test/dataIntegrity/integrity_script.py front_hole ${{ parameters.mount_dir }} ${{ parameters.temp_dir }} $i 3
       done
       echo "-----------------  Print Remote Files -----------------------------------"
       ls -l ${{ parameters.mount_dir }}/front_hole_*
@@ -145,7 +143,7 @@ steps:
     displayName: 'Validate sparse files with front hole'
 
   - script: |
-      rm -rf *_front_hole*
+      rm -rf *front_hole*
       rm -rf ${{ parameters.temp_dir }}/front_hole_*
       rm -rf ${{ parameters.mount_dir }}/front_hole_*
     displayName: 'Cleanup sparse files with front hole'

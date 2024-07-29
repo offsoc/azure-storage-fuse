@@ -1,54 +1,69 @@
 import sys
+import io
+import random
 
 # Class to hold the test parameters
 class TestParams:
-    def __init__(self, file_name, file_size, write_length):
-        self.file_name = file_name
+    def __init__(self, local_path, remote_path, file_size, write_length):
+        self.local_path = local_path
+        self.remote_path = remote_path
         self.file_size = file_size
         self.write_length = write_length
 
 # Method to create a sparse file with hole in middle
 def test_create_sparse(params):
-    data_to_write = b'A' * params.write_length
+    data_to_write = random.randbytes(params.write_length)
+
+    local_file_name = params.local_path + "/sparse_" + str(params.file_size)
+    remote_file_name = params.remote_path + "/sparse_" + str(params.file_size) 
 
     # Create a new file and write the data
-    with open(params.file_name, 'wb') as file:
+    with open(remote_file_name, 'wb') as remote_file, open(local_file_name, 'wb') as local_file :
         # Write data at the start of the file
-        file.write(data_to_write)
+        remote_file.write(data_to_write)
+        local_file.write(data_to_write)
         
         # Seek to the end of the file
-        file.seek(params.file_size - params.write_length)
+        remote_file.seek(params.file_size - params.write_length)
+        local_file.seek(params.file_size - params.write_length)
         
         # Write data at the end of the file
-        file.write(data_to_write)
+        remote_file.write(data_to_write)
+        local_file.write(data_to_write)
 
 
 # Method to create a sparse file with hole in the begining
 def test_create_front_hole(params):
-    data_to_write = b'A' * params.write_length
+    data_to_write = random.randbytes(params.write_length)
+
+    local_file_name = params.local_path + "/front_hole_" + str(params.file_size) 
+    remote_file_name = params.remote_path + "/front_hole_" + str(params.file_size)
 
     # Create a new file and write the data
-    with open(params.file_name, 'wb') as file:
+    with open(remote_file_name, 'wb') as remote_file, open(local_file_name, 'wb') as local_file :
         # Seek to the end of the file
-        file.seek(params.file_size - params.write_length)
+        remote_file.seek(params.file_size - params.write_length)
+        local_file.seek(params.file_size - params.write_length)
         
         # Write data at the end of the file
-        file.write(data_to_write)
+        remote_file.write(data_to_write)
+        local_file.write(data_to_write)
 
 # Main method to simulate all test cases
 if __name__ == "__main__":
     # File-name, File-Size, Write Length are input to this script
-    if len(sys.argv) != 5:
-        print("Usage: python create_sparse_file.py <test_case> <file_name> <file_size> <write_length")
+    if len(sys.argv) != 6:
+        print("Usage: python integrity_script.py <test_case> <local_path> <remote_path> <file_size> <write_length")
         sys.exit(1)
 
     test_case = sys.argv[1]
-    file_name = sys.argv[2]
-    file_size = int(sys.argv[3])
-    write_length = int(sys.argv[4])
+    local_path = sys.argv[2]
+    remote_path = sys.argv[3]
+    file_size = int(sys.argv[4])
+    write_length = int(sys.argv[5])
 
     # Create an instance of FileParams
-    params = TestParams(file_name, file_size, write_length)
+    params = TestParams(local_path, remote_path, file_size, write_length)
 
     function_name = f"test_create_{test_case}"
     if function_name in globals():
