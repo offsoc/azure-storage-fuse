@@ -103,7 +103,7 @@ if __name__ == "__main__":
     # Create an instance of FileParams
     params = TestParams(local_path, remote_path, file_size, write_length)
 
-    function_name = f"test_create_{test_case}"
+    function_name = f"test_{test_case}"
     if function_name in globals():
         globals()[function_name](params)
     else:
