@@ -47,7 +47,9 @@ steps:
         python3 $(WORK_DIR)/test/dataIntegrity/create_file.py sparse ${{ parameters.mount_dir }}/sparse_file_$i $i 3
         python3 $(WORK_DIR)/test/dataIntegrity/create_file.py sparse ${{ parameters.temp_dir }}/sparse_file_$i $i 3
       done
+      echo "-----------------  Print Remote Files -----------------------------------"
       ls -l ${{ parameters.mount_dir }}/sparse_file_*
+      echo "-----------------  Print Local Files -----------------------------------"
       ls -l ${{ parameters.temp_dir }}/sparse_file_*
     displayName: 'Create sparse files'
 
@@ -61,11 +63,15 @@ steps:
 
   - script: |
       # Check sparse files
+      echo "-----------------  Print Remote Files -----------------------------------"
       cd ${{ parameters.mount_dir }}
+      ls -lh
       md5sum -b sparse_file_* > $(WORK_DIR)/remote_sparse.md5
+      echo "-----------------  Print Local Files -----------------------------------"
       cd ${{ parameters.temp_dir }}
       md5sum -b sparse_file_* > $(WORK_DIR)/local_sparse.md5
       cd $(WORK_DIR)
+      echo "-----------------  Validate checksum -----------------------------------"
       cat *sparse*.md5
       diff remote_sparse.md5 local_sparse.md5
       if [ $? -ne 0 ]; then
