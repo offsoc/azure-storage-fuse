@@ -10,6 +10,12 @@ class TestParams:
         self.file_size = file_size
         self.write_length = write_length
 
+def read_all_data(file_path):
+    with open(file_path, 'r') as file:
+        data = file.read()
+        num_bytes = len(data.encode('utf-8'))  # Calculate the number of bytes
+    return data, num_bytes
+
 # Method to create a sparse file with hole in middle
 def test_create_sparse(params):
     data_to_write = random.randbytes(params.write_length)
@@ -48,6 +54,38 @@ def test_create_front_hole(params):
         # Write data at the end of the file
         remote_file.write(data_to_write)
         local_file.write(data_to_write)
+
+def test_read_data(params):
+    local_file_name = params.local_path + "/test_data_" + str(params.file_size)
+    remote_file_name = params.remote_path + "/test_data_" + str(params.file_size) 
+
+    remote_data, remote_num_bytes = read_all_data(remote_file_name)
+    local_data, local_num_bytes = read_all_data(local_file_name)
+
+    if remote_data == local_data and remote_num_bytes == local_num_bytes and remote_num_bytes == params.file_size:
+        print("Data Integrity Test Passed")
+    else:
+        print("Data Integrity Test Failed")
+
+
+def test_write_data(params):
+    data_to_write = random.randbytes(params.write_length)
+
+    local_file_name = params.local_path + "/test_data_" + str(params.file_size)
+    remote_file_name = params.remote_path + "/test_data_" + str(params.file_size) 
+
+    written = 0
+    # Create a new file and write the data
+    with open(remote_file_name, 'wb') as remote_file, open(local_file_name, 'wb') as local_file :
+        # Write data at the start of the file
+        remote_file.write(data_to_write)
+        local_file.write(data_to_write)
+
+        written += params.write_length
+        
+        if written >= params.file_size:
+            return
+
 
 # Main method to simulate all test cases
 if __name__ == "__main__":

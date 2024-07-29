@@ -35,6 +35,79 @@ steps:
     displayName: 'Print config file'
 
   # ----------------------------------------------------------------------------------------------------------------
+  # Full file write and read
+  - script: |
+      $(WORK_DIR)/blobfuse2 mount ${{ parameters.mount_dir }} --config-file=dataInegrityConfig.yaml --default-working-dir=$(WORK_DIR) --block-cache --block-cache-block-size=${{ parameters.block_size }} --container-name=${{ parameters.container }} --block-cache-pool-size=100
+    displayName: "Mount Blobfuse2 : Full file test"
+
+  - script: |
+      rm -rf ${{ parameters.temp_dir }}/*test_data*
+      rm -rf ${{ parameters.mount_dir }}/*test_data*
+      
+      for i in {10,13,50,100,973,1024,1048576,1048590,5242880,52428800,52428968,1073741824}
+      do
+        python3 $(WORK_DIR)/test/dataIntegrity/integrity_script.py write_data ${{ parameters.mount_dir }} ${{ parameters.temp_dir }} $i 3
+      done
+      
+      echo "-----------------  Print Remote Files -----------------------------------"
+      ls -l ${{ parameters.mount_dir }}/test_data_*
+      echo "-----------------  Print Local Files -----------------------------------"
+      ls -l ${{ parameters.temp_dir }}/test_data_*
+    displayName: 'Create Full files'
+
+  - script: |
+      $(WORK_DIR)/blobfuse2 unmount all
+    displayName: "Un-Mount Blobfuse2 : Full file test"
+
+  - script: |
+      $(WORK_DIR)/blobfuse2 mount ${{ parameters.mount_dir }} --config-file=dataInegrityConfig.yaml --default-working-dir=$(WORK_DIR) --block-cache --block-cache-block-size=${{ parameters.block_size }} --container-name=${{ parameters.container }}
+    displayName: "Re-Mount Blobfuse2 : Full file test"
+
+  - script: |
+      for i in {10,13,50,100,973,1024,1048576,1048590,5242880,52428800,52428968,1073741824}
+      do
+        python3 $(WORK_DIR)/test/dataIntegrity/integrity_script.py read_data ${{ parameters.mount_dir }} ${{ parameters.temp_dir }} $i 3
+      done
+
+  - script: |
+      echo "-----------------  Print Remote Files -----------------------------------"
+      cd ${{ parameters.mount_dir }}
+      ls -l test_data_*
+      md5sum -b test_data_* > $(WORK_DIR)/remote_full.md5
+      
+      echo "-----------------  Print Local Files -----------------------------------"
+      cd ${{ parameters.temp_dir }}
+      ls -l test_data_*
+      md5sum -b test_data_* > $(WORK_DIR)/local_full.md5
+      
+      echo "-----------------  Validate checksum -----------------------------------"
+      cd $(WORK_DIR)
+      cat *full.md5
+      
+      diff remote_full.md5 local_full.md5
+      if [ $? -ne 0 ]; then
+        exit 1
+      fi
+    displayName: 'Validate Full files'
+
+  - script: |
+      rm -rf *full*
+      rm -rf ${{ parameters.temp_dir }}/test_data_*
+      rm -rf ${{ parameters.mount_dir }}/test_data_*
+    displayName: 'Cleanup Full files'
+
+  - script: |
+      $(WORK_DIR)/blobfuse2 unmount all
+    displayName: 'Unmount Blobfuse2'
+
+  # End the test now
+  - template: 'cleanup.yml'
+    parameters:
+      working_dir: $(WORK_DIR)
+      mount_dir: ${{ parameters.mount_dir }}
+      temp_dir: ${{ parameters.temp_dir }}   
+
+  # ----------------------------------------------------------------------------------------------------------------
   # Sparse file testing
   - script: |
       $(WORK_DIR)/blobfuse2 mount ${{ parameters.mount_dir }} --config-file=dataInegrityConfig.yaml --default-working-dir=$(WORK_DIR) --block-cache --block-cache-block-size=${{ parameters.block_size }} --container-name=${{ parameters.container }} --block-cache-pool-size=100
