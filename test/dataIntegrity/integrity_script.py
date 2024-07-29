@@ -77,9 +77,10 @@ def test_write_data(params):
     # Create a new file and write the data
     with open(remote_file_name, 'wb') as remote_file, open(local_file_name, 'wb') as local_file :
         while written < params.file_size:
+            to_write = min(params.write_length, params.file_size - written)
             # Write data at the start of the file
-            remote_file.write(data_to_write)
-            local_file.write(data_to_write)
+            remote_file.write(data_to_write[:to_write])
+            local_file.write(data_to_write[:to_write])
 
             written += params.write_length
        
