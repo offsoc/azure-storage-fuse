@@ -65,11 +65,11 @@ steps:
       # Check sparse files
       echo "-----------------  Print Remote Files -----------------------------------"
       cd ${{ parameters.mount_dir }}
-      ls -lh sparse_file_*
+      ls -l sparse_file_*
       md5sum -b sparse_file_* > $(WORK_DIR)/remote_sparse.md5
       echo "-----------------  Print Local Files -----------------------------------"
       cd ${{ parameters.temp_dir }}
-      ls -lh sparse_file_*
+      ls -l sparse_file_*
       md5sum -b sparse_file_* > $(WORK_DIR)/local_sparse.md5
       echo "-----------------  Validate checksum -----------------------------------"
       cd $(WORK_DIR)
@@ -112,9 +112,9 @@ steps:
         python3 $(WORK_DIR)/test/dataIntegrity/integrity_script.py front_hole ${{ parameters.temp_dir }}/front_hole_$i $i 3
       done
       echo "-----------------  Print Remote Files -----------------------------------"
-      ls -lh ${{ parameters.mount_dir }}/front_hole_*
+      ls -l ${{ parameters.mount_dir }}/front_hole_*
       echo "-----------------  Print Locak Files -----------------------------------"
-      ls -lh ${{ parameters.temp_dir }}/front_hole_*
+      ls -l ${{ parameters.temp_dir }}/front_hole_*
     displayName: 'Create sparse files with front hole'
 
   - script: |
@@ -130,10 +130,10 @@ steps:
       echo "-----------------  Print Remote Files -----------------------------------"
       cd ${{ parameters.mount_dir }}
       md5sum -b front_hole_* > $(WORK_DIR)/remote_front_hole.md5
-      ls -lh front_hole_*
+      ls -l front_hole_*
       echo "-----------------  Print Local Files -----------------------------------"
       cd ${{ parameters.temp_dir }}
-      ls -lh front_hole_*
+      ls -l front_hole_*
       md5sum -b front_hole_* > $(WORK_DIR)/local_front_hole.md5
       echo "-----------------  Validate checksum -----------------------------------"
       cd $(WORK_DIR)
