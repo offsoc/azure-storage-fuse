@@ -11,8 +11,10 @@ class TestParams:
         self.write_length = write_length
 
 def read_all_data(file_path):
-    with open(file_path, 'r') as file:
+    with open(file_path, 'rb') as file:
         data = file.read()
+    
+    print("Data Read : ", file_path, " : " ,str(len(data)))
     return data, len(data)
 
 # Method to create a sparse file with hole in middle
