@@ -81,6 +81,13 @@ func (suite *customTestSuite) TestInitializePluginsValidPath() {
 	err = cmd.Run()
 	suite.assert.Nil(err)
 
+	cmd = exec.Command("ls", "-lrth")
+        out, err := cmd.Output()
+        if err != nil {
+            suite.assert.Nil(err, "Error listing .so files")
+        }
+        suite.assert.NotNil(out, "Listing .so files output")
+        suite.assert.Nil(err) // This will print the output of the ls command
 	os.Setenv("BLOBFUSE_PLUGIN_PATH", plugin1+":"+plugin2)
 
 	err = initializePlugins()
