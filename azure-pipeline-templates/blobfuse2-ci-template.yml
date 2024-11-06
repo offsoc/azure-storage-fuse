@@ -144,7 +144,7 @@ steps:
   - task: Go@0
     inputs:
       command: 'test'
-      arguments: '-v -timeout=2h ./... --tags=unittest,${{ parameters.tags }} -coverprofile utcover.cov'
+      arguments: '-v -x -timeout=2h ./... --tags=unittest,${{ parameters.tags }} -coverprofile utcover.cov'
       workingDirectory: ./
     displayName: 'Unit tests'
     continueOnError: false
