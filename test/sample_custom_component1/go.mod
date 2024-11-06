@@ -4,7 +4,7 @@ go 1.22.0
 
 toolchain go1.23.1
 
-require github.com/Azure/azure-storage-fuse/v2 v2.0.0-20241105172709-e53af0f71d8c
+require github.com/Azure/azure-storage-fuse/v2 v2.0.0-20241105225709-e53af0f71d8c
 
 require (
 	github.com/JeffreyRichter/enum v0.0.0-20180725232043-2567042f9cda // indirect
