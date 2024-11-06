@@ -34,6 +34,7 @@
 package custom
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"testing"
@@ -86,8 +87,7 @@ func (suite *customTestSuite) TestInitializePluginsValidPath() {
 	if err != nil {
 		suite.assert.Nil(err, "Error listing .so files")
 	}
-	suite.assert.NotNil(out, "Listing .so files output")
-	suite.assert.Nil(err) // This will print the output of the ls command
+	fmt.Println(string(out))
 	os.Setenv("BLOBFUSE_PLUGIN_PATH", plugin1+":"+plugin2)
 
 	err = initializePlugins()

@@ -84,7 +84,7 @@ func initializePlugins() error {
 
 		compName, initExternalComponent := getExternalComponent()
 		internal.AddComponent(compName, initExternalComponent)
-		log.Info("Plugin %s loaded in %s", file, time.Since(startTime))
+		fmt.Printf("Plugin %s loaded in %s", file, time.Since(startTime))
 	}
 	return nil
 }
