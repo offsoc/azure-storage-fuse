@@ -72,6 +72,7 @@ func initializePlugins() error {
 
 		getExternalComponentFunc, err := p.Lookup("GetExternalComponent")
 		if err != nil {
+			fmt.Printf("GetExternalComponent function lookup error in plugin %s: %s", file, err.Error())
 			log.Err("GetExternalComponent function lookup error in plugin %s: %s", file, err.Error())
 			return fmt.Errorf("GetExternalComponent function lookup error in plugin %s: %s", file, err.Error())
 		}

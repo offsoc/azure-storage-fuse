@@ -75,10 +75,10 @@ func (suite *customTestSuite) TestInitializePluginsValidPath() {
 	plugin2 := "./sample_custom_component2.so"
 
 	// Compile the Go plugin source files into .so files
-	cmd := exec.Command("go", "build", "-buildmode=plugin", "-o", plugin1, source1)
+	cmd := exec.Command("go", "build", "-tags", "excludeAzureDependency", "-buildmode=plugin", "-o", plugin1, source1)
 	err := cmd.Run()
 	suite.assert.Nil(err)
-	cmd = exec.Command("go", "build", "-buildmode=plugin", "-o", plugin2, source2)
+	cmd = exec.Command("go", "build", "-tags", "excludeAzureDependency", "-buildmode=plugin", "-o", plugin2, source2)
 	err = cmd.Run()
 	suite.assert.Nil(err)
 

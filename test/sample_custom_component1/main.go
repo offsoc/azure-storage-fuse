@@ -1,3 +1,6 @@
+//go:build !excludeAzureDependency
+// +build !excludeAzureDependency
+
 /*
     _____           _____   _____   ____          ______  _____  ------
    |     |  |      |     | |     | |     |     | |       |            |
