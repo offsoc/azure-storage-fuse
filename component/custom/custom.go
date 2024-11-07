@@ -41,8 +41,6 @@ import (
 	"time"
 
 	"github.com/Azure/azure-storage-fuse/v2/common/log"
-	"github.com/Azure/azure-storage-fuse/v2/exported"
-	"github.com/Azure/azure-storage-fuse/v2/internal"
 )
 
 func initializePlugins() error {
@@ -76,15 +74,16 @@ func initializePlugins() error {
 			log.Err("GetExternalComponent function lookup error in plugin %s: %s", file, err.Error())
 			return fmt.Errorf("GetExternalComponent function lookup error in plugin %s: %s", file, err.Error())
 		}
+		fmt.Printf("GetExternalComponent function: %v\n", getExternalComponentFunc)
 
-		getExternalComponent, ok := getExternalComponentFunc.(func() (string, func() exported.Component))
+		/* getExternalComponent, ok := getExternalComponentFunc.(func() (string, func() exported.Component))
 		if !ok {
 			log.Err("GetExternalComponent function in %s has some incorrect definition", file)
 			return fmt.Errorf("GetExternalComponent function in %s has some incorrect definition", file)
 		}
 
 		compName, initExternalComponent := getExternalComponent()
-		internal.AddComponent(compName, initExternalComponent)
+		internal.AddComponent(compName, initExternalComponent) */
 		fmt.Printf("Plugin %s loaded in %s", file, time.Since(startTime))
 	}
 	return nil
