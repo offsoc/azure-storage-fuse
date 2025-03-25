@@ -1,0 +1,31 @@
+
+{ 
+    "filename": "example.txt", 
+    "state": "writing", 
+    "open-count": "open fds to this file",  
+    "size": 10732876819, 
+    "created": 1741206800,  
+	"sha1hash": "fc1dccf105a357151b741b96c12cc1273612f04e", 
+    "chunk-size": "1GB", 
+    "num-chunks": 11, 
+
+    "layout": [{ 
+        "chunk-id": "GUID", 
+        "chunk-hash": "chunk hash for data integrity", 
+    "replicas": [  
+        { 
+            "offset": "offset within the file in bytes", 
+            "size": "size in bytes", 
+            "num-stripes": "how many stripes", 
+	        "stripe-size": "bytes", 
+            "nodes": [ 
+                { 
+                    "node-id": "GUID"
+                }
+            ] 
+        }
+    ]   
+    }
+    ]
+}
+    

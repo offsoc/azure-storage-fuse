@@ -35,7 +35,9 @@ package distributed_cache
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/Azure/azure-storage-fuse/v2/common/config"
@@ -117,6 +119,7 @@ func (dc *DistributedCache) Start(ctx context.Context) error {
 	log.Info("DistributedCache::Start : Cache structure setup completed")
 	dc.heartbeatManager = NewHeartbeatManager(dc.cachePath, dc.storage, dc.hbDuration, "__CACHE__"+dc.cacheID)
 	dc.heartbeatManager.Start()
+	dc.CreateMetadataFile(cacheDir)
 	return nil
 
 }
@@ -153,6 +156,10 @@ func (dc *DistributedCache) setupCacheStructure(cacheDir string) error {
 				return nil
 			}
 		}
+		err = dc.CreateMetadataFile(cacheDir)
+		if err != nil {
+			return logAndReturnError(fmt.Sprintf("DistributedCache::Start error [failed to create metadata file: %v]", err))
+		}
 	}
 	return nil
 }
@@ -161,6 +168,85 @@ func (dc *DistributedCache) setupCacheStructure(cacheDir string) error {
 func logAndReturnError(msg string) error {
 	log.Err(msg)
 	return fmt.Errorf(msg)
+}
+
+// Create Metadata file for every new file created
+func (dc *DistributedCache) CreateMetadataFile(cacheDir string) error {
+	// Open the example.json file
+	sourceFile, err := os.ReadFile("/home/anubhuti/Downloads/clone2/azure-storage-fuse/testapp/example.json")
+	if err != nil {
+		log.Err("CreateMetadataFile: Failed to open source file: ", err)
+		return err
+	}
+	fileName := "metafile2.json.md"
+	if err := dc.storage.WriteFromBuffer(internal.WriteFromBufferOptions{Name: cacheDir + "/" + fileName,
+		Data: sourceFile,
+		Etag: true}); err != nil {
+		if !bloberror.HasCode(err, bloberror.BlobAlreadyExists) {
+			return logAndReturnError(fmt.Sprintf("DistributedCache::Start error [failed to create creator file: %v]", err))
+		} else {
+			return nil
+		}
+	}
+	fmt.Printf("Metadata file created: %s\n", fileName)
+	dummyReplica := map[string]interface{}{
+		"offset":      "12345",
+		"size":        "1024",
+		"num-stripes": "4",
+		"stripe-size": "256",
+		"nodes":       []string{"node1", "node2"},
+	}
+	dc.UpdateMetadataFile(cacheDir, fileName, dummyReplica)
+
+	return nil
+}
+
+// UpdateMetadataFile updates the replicas section in the JSON file
+func (dc *DistributedCache) UpdateMetadataFile(cacheDir string, fileName string, newReplica map[string]interface{}) error {
+	fileContent, err := dc.storage.ReadBuffer(cacheDir+"/"+fileName, 0, 0)
+	if err != nil {
+		logAndReturnError(fmt.Sprintf("failed to read file %s: %v", fileName, err))
+		return err
+	}
+	// Parse the JSON content into a map
+	var jsonData map[string]interface{}
+	err = json.Unmarshal(fileContent, &jsonData)
+	if err != nil {
+		logAndReturnError(fmt.Sprintf("failed to unmarshal JSON: %v", err))
+		return err
+	}
+
+	// Access and update the replicas section
+	layout, ok := jsonData["layout"].([]interface{})
+	if !ok || len(layout) == 0 {
+		logAndReturnError("failed to find layout section in JSON")
+		return err
+	}
+
+	// Assuming the first layout object contains the replicas section
+	firstLayout := layout[0].(map[string]interface{})
+
+	firstLayout["replicas"] = newReplica
+
+	// Update the layout back in the JSON data
+	jsonData["layout"] = layout
+
+	// Marshal the updated JSON back to a string
+	updatedContent, err := json.MarshalIndent(jsonData, "", "    ")
+	if err != nil {
+		logAndReturnError(fmt.Sprintf("failed to marshal updated JSON: %v", err))
+		return err
+	}
+
+	// Replace the original file with the temporary file
+	err = dc.storage.WriteFromBuffer(internal.WriteFromBufferOptions{Name: cacheDir + "/" + fileName, Data: []byte(updatedContent), Etag: true})
+	if err != nil {
+		logAndReturnError(fmt.Sprintf("failed to write updated JSON to file: %v", err))
+		return err
+	}
+
+	fmt.Printf("Metadata file updated successfully: %s\n", fileName)
+	return err
 }
 
 // Stop : Stop the component functionality and kill all threads started

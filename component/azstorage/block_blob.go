@@ -1115,7 +1115,7 @@ func (bb *BlockBlob) WriteFromBuffer(options internal.WriteFromBufferOptions) er
 	if options.Etag {
 		uploadOptions.AccessConditions = &blob.AccessConditions{
 			ModifiedAccessConditions: &blob.ModifiedAccessConditions{
-				IfNoneMatch: to.Ptr(azcore.ETagAny),
+				IfMatch: to.Ptr(azcore.ETagAny),
 			},
 		}
 	}
