@@ -39,8 +39,10 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -173,34 +175,75 @@ func (suite *distributedCacheTestSuite) TestDistributedCacheSetupCacheStructure(
 }
 
 func (suite *distributedCacheTestSuite) TestMetaDate() {
-	err := suite.distributedCache.CreateMetadataFile("metadati")
+	err := suite.distributedCache.CreateMetadataFile("__CACHE_2311", "metadatafile1.json.md")
 	suite.assert.Nil(err, "Failed to create metadata file")
 	// check if the file is creatged
 	// _, err = os.Stat("metadatafile1.json.md")
 	// require.NoError(t, err, "Metadata file should be created")
 }
 
-// func TestUpdateMetadata(t *testing.T) {
-// 	err := os.Chdir("/home/anubhuti/mntdir")
-// 	require.NoError(t, err, "Failed to change directory")
-// 	dummyReplica := map[string]interface{}{
-// 		"offset":      "12345",
-// 		"size":        "1024",
-// 		"num-stripes": "4",
-// 		"stripe-size": "256",
-// 		"nodes":       []string{"node1", "node2"},
-// 	}
-// 	UpdateMetadataFile("metadatafile1.json.md", dummyReplica)
-// 	// check if the file is updated
-// 	metadataFile, err := os.ReadFile("metadatafile1.json.md")
-// 	require.NoError(t, err, "Failed to read metadata file")
-// 	require.Contains(t, string(metadataFile), `"offset":"12345"`, "Metadata file should be updated")
-// 	require.Contains(t, string(metadataFile), `"size":"1024"`, "Metadata file should be updated")
-// 	require.Contains(t, string(metadataFile), `"num-stripes":"4"`, "Metadata file should be updated")
-// 	require.Contains(t, string(metadataFile), `"stripe-size":"256"`, "Metadata file should be updated")
-// 	require.Contains(t, string(metadataFile), `"nodes":["node1","node2"]`, "Metadata file should be updated")
+func (suite *distributedCacheTestSuite) TestUpdateMetadata() {
+	dummyReplica := map[string]interface{}{
+		"offset":      "0938293",
+		"size":        "1024",
+		"num-stripes": "4",
+		"stripe-size": "256",
+		"nodes":       []string{"node1", "node2"},
+	}
+	suite.distributedCache.UpdateMetadataFile("__CACHE__2311", "metadatafile1.json.md", dummyReplica)
+	// check if the file is updated
+	metadataFile, err := os.ReadFile("metadatafile1.json.md")
+	suite.assert.Nil(err, "Failed to read metadata file")
+	suite.assert.Contains(string(metadataFile), "0938293", "Metadata file should be updated")
+	suite.assert.Contains(string(metadataFile), "1024", "Metadata file should be updated")
+	suite.assert.Contains(string(metadataFile), "4", "Metadata file should be updated")
+	suite.assert.Contains(string(metadataFile), "256", "Metadata file should be updated")
+	suite.assert.Contains(string(metadataFile), "node1", "Metadata file should be updated")
+}
 
-// }
+func (suite *distributedCacheTestSuite) TestWithGoRoutines() {
+	cmd := exec.Command("bash", "-c", "../../blobfuse2", "/home/anubhuti/mntdir")
+	_, err := cmd.Output()
+	if err != nil {
+		suite.assert.Fail("Failed to run command: %s", err)
+	}
+	// Start the timer
+	startTime := time.Now()
+
+	// Create a wait group to wait for all goroutines to finish
+	var wg sync.WaitGroup
+
+	// Number of goroutines to spawn
+	numGoroutines := 50
+
+	// Create 50 goroutines and run them in parallel to call CreateMetadataFile
+	for i := range numGoroutines {
+		wg.Add(1) // Increment the wait group counter
+		go func(i int) {
+			defer wg.Done() // Decrement the counter when the goroutine finishes
+
+			// Generate a unique file name for each goroutine
+			fileName := fmt.Sprintf("metadata_%d.md", i)
+
+			// Call CreateMetadataFile
+			err := suite.distributedCache.CreateMetadataFile("__CACHE__211", fileName)
+			suite.assert.Nil(err, "Failed to create metadata file")
+		}(i)
+	}
+
+	// Wait for all goroutines to finish
+	wg.Wait()
+
+	// Record the total time taken
+	totalTime := time.Since(startTime)
+	fmt.Printf("CreateMetadatFile :: Total time taken for %d goroutines: %v\n", numGoroutines, totalTime)
+
+	cmd = exec.Command("bash", "-c", "../../blobfuse2", "unmount", "all")
+	_, err = cmd.Output()
+	if err != nil {
+		suite.assert.Fail("Failed to run command: %s", err)
+	}
+}
 
 // write a tes
 

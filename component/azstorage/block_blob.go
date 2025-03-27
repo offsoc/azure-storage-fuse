@@ -1111,12 +1111,21 @@ func (bb *BlockBlob) WriteFromBuffer(options internal.WriteFromBufferOptions) er
 		},
 		CPKInfo: bb.blobCPKOpt,
 	}
-
 	if options.Etag {
-		uploadOptions.AccessConditions = &blob.AccessConditions{
-			ModifiedAccessConditions: &blob.ModifiedAccessConditions{
-				IfMatch: to.Ptr(azcore.ETagAny),
-			},
+		if options.EtagVal != "" {
+			etag := to.Ptr(azcore.ETag(options.EtagVal))
+			uploadOptions.AccessConditions = &blob.AccessConditions{
+				ModifiedAccessConditions: &blob.ModifiedAccessConditions{
+					IfMatch: etag,
+				},
+			}
+		} else {
+			etag := to.Ptr(azcore.ETagAny)
+			uploadOptions.AccessConditions = &blob.AccessConditions{
+				ModifiedAccessConditions: &blob.ModifiedAccessConditions{
+					IfNoneMatch: etag,
+				},
+			}
 		}
 	}
 

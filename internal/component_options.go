@@ -125,6 +125,7 @@ type WriteFromBufferOptions struct {
 	Metadata map[string]*string
 	Data     []byte
 	Etag     bool
+	EtagVal  string
 }
 
 type GetFileBlockOffsetsOptions struct {
