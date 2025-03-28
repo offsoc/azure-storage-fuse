@@ -2,7 +2,7 @@
 { 
     "filename": "example.txt", 
     "state": "writing", 
-    "open-count": "open fds to this file",  
+    "open-count": 0,  
     "size": 10732876819, 
     "created": 1741206800,  
 	"sha1hash": "fc1dccf105a357151b741b96c12cc1273612f04e", 
