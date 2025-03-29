@@ -114,7 +114,6 @@ type AzConnection interface {
 	RenameDirectory(string, string) error
 
 	GetAttr(name string) (attr *internal.ObjAttr, err error)
-
 	// Standard operations to be supported by any account type
 	List(prefix string, marker *string, count int32) ([]*internal.ObjAttr, *string, error)
 
@@ -126,6 +125,8 @@ type AzConnection interface {
 	WriteFromBuffer(options internal.WriteFromBufferOptions) error
 	Write(options internal.WriteFileOptions) error
 	GetFileBlockOffsets(name string) (*common.BlockOffsetList, error)
+
+	SetAttr(name string, attr *internal.ObjAttr) error
 
 	ChangeMod(string, os.FileMode) error
 	ChangeOwner(string, int, int) error

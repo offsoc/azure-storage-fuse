@@ -39,6 +39,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -125,7 +126,8 @@ func (dc *DistributedCache) Start(ctx context.Context) error {
 	// dc.CreateMetadataFile(cacheDir, "metadatafile1.json.md")
 	// dc.UpdateMetaParallel(cacheDir)
 	dc.OpenMetaParallel(cacheDir)
-	// dc.OpenMetadataFile(cacheDir, "metadata_1.md")
+	// dc.CreateMetadataFile(cacheDir, "metadataNeWWW.md")
+	// dc.OpenMetadataFile(cacheDir, "metadataNeWWW.md")
 	return nil
 }
 
@@ -171,7 +173,7 @@ func (dc *DistributedCache) OpenMetaParallel(cacheDir string) error {
 	var wg sync.WaitGroup
 
 	// Number of goroutines to spawn
-	numGoroutines := 20
+	numGoroutines := 100
 
 	// Create 50 goroutines and run them in parallel to call CreateMetadataFile
 	for i := range numGoroutines {
@@ -180,7 +182,7 @@ func (dc *DistributedCache) OpenMetaParallel(cacheDir string) error {
 			defer wg.Done() // Decrement the counter when the goroutine finishes
 
 			// Generate a unique file name for each goroutine
-			fileName := "metadata_1.md"
+			fileName := "metadataNeWWW.md"
 
 			// Call CreateMetadataFile
 			fileContent, err := dc.OpenMetadataFile(cacheDir, fileName)
@@ -253,7 +255,7 @@ func (dc *DistributedCache) UpdateMetaParallel(cacheDir string) error {
 	var wg sync.WaitGroup
 
 	// Number of goroutines to spawn
-	numGoroutines := 100
+	numGoroutines := 1
 
 	// Create 50 goroutines and run them in parallel to call CreateMetadataFile
 	for i := range numGoroutines {
@@ -339,15 +341,22 @@ func logAndReturnError(msg string) error {
 // Create Metadata file for every new file created
 func (dc *DistributedCache) CreateMetadataFile(cacheDir string, fileName string) error {
 	// Open the example.json file
-	sourceFile, err := os.ReadFile("../../setup/azure-storage-fuse/setup/example.json")
+	sourceFile, err := os.ReadFile("/home/anubhuti/Downloads/clone2/azure-storage-fuse/setup/example.json")
 	if err != nil {
 		log.Err("CreateMetadataFile: Failed to open source file: ", err)
 		return err
 	}
-	if err := dc.storage.WriteFromBuffer(internal.WriteFromBufferOptions{Name: cacheDir + "/Objects/" + fileName,
-		Data:    sourceFile,
-		Etag:    true,
-		EtagVal: ""}); err != nil {
+	// Create metadata file of type map[string]*string to store open count
+	// and replicas
+	openCount := "0"
+	metadata := map[string]*string{
+		"openCount": &openCount}
+
+	if err := dc.NextComponent().WriteFromBuffer(internal.WriteFromBufferOptions{Name: cacheDir + "/" + fileName,
+		Data:     sourceFile,
+		Etag:     true,
+		EtagVal:  "",
+		Metadata: metadata}); err != nil {
 		return logAndReturnError(fmt.Sprintf("DistributedCache:: Failed to create metadatafile: %v]", err))
 	}
 	return nil
@@ -358,56 +367,95 @@ func (dc *DistributedCache) OpenMetadataFile(cacheDir string, fileName string) (
 	// retryCount := 10000 // TODO:: This is the limit for the numbr of nodes having simultaneous access
 	success := false
 	var err error
-	var updatedContent []byte
+	var resp []byte
 	for !success {
-		attr, err := dc.storage.GetAttr(cacheDir + "/" + fileName)
+		attr, err := dc.NextComponent().GetAttr(internal.GetAttrOptions{Name: cacheDir + "/" + fileName})
 		if err != nil {
 			logAndReturnError(fmt.Sprintf("DistributedCache:: Failed to get file attributes: %v", err))
 			return nil, err
 		}
-		fileContent, err := dc.storage.ReadBuffer(cacheDir+"/"+fileName, 0, 0)
+		// Create a dummy handle
+		// handle := handlemap.NewHandle(cacheDir + "/" + fileName)
+		// if handle == nil {
+		// 	log.Err("AzStorage::OpenFile : Failed to create handle for")
+		// 	return nil, syscall.EFAULT
+		// }
+		// var fileContent []byte
+		resp, err = dc.NextComponent().ReadFileWithName(internal.ReadFileWithNameOptions{Path: cacheDir + "/" + fileName})
 		if err != nil {
 			logAndReturnError(fmt.Sprintf("DistributedCache:: Failed to read metadatafile %s: %v", fileName, err))
 			return nil, err
 		}
 		// Parse the JSON content into a map
-		var jsonData map[string]any
-		err = json.Unmarshal(fileContent, &jsonData)
-		if err != nil {
-			logAndReturnError(fmt.Sprintf("DistributedCache:: Failed to unmarshal JSON: %v", err))
-			return nil, err
-		}
+		// var jsonData map[string]any
+		// err = json.Unmarshal(resp, &jsonData)
+		// if err != nil {
+		// 	logAndReturnError(fmt.Sprintf("DistributedCache:: Failed to unmarshal JSON: %v", err))
+		// 	return nil, err
+		// }
 
-		if openCount, ok := jsonData["open-count"].(float64); ok {
-			jsonData["open-count"] = openCount + 1 // Update the "open-fd" parameter
+		// Create a attr object
+
+		if openCount, ok := attr.Metadata["opencount"]; ok && openCount != nil {
+			print(*openCount)
 		} else {
-			logAndReturnError("DistributedCache:: Failed to cast 'open-count' to int")
-			return nil, fmt.Errorf("invalid type for 'open-count'")
+			log.Warn("DistributedCache::OpenMetadataFile: openCount metadata is missing or nil")
 		}
 
-		// Marshal the updated JSON back to a string
-		updatedContent, err = json.MarshalIndent(jsonData, "", "    ")
-		if err != nil {
-			logAndReturnError(fmt.Sprintf("DistributedCache:: Failed to marshal updated JSON: %v", err))
-			return nil, err
+		newAttr := &internal.ObjAttr{
+			ETag: attr.ETag,
+			Metadata: func() map[string]*string {
+				openCountStr := "0"
+				if attr.Metadata["opencount"] != nil {
+					openCount, err := strconv.Atoi(*attr.Metadata["opencount"])
+					if err == nil {
+						openCountStr = strconv.Itoa(openCount + 1)
+					}
+				}
+				return map[string]*string{
+					"opencount": &openCountStr,
+				}
+			}(),
 		}
+		err = dc.NextComponent().SetAttr(internal.SetAttrOptions{Name: cacheDir + "/" + fileName, Attr: newAttr})
 
-		// Replace the original file with the temporary file
-		err = dc.storage.WriteFromBuffer(internal.WriteFromBufferOptions{Name: cacheDir + "/" + fileName, Data: []byte(updatedContent), Etag: true, EtagVal: attr.ETag})
 		if err != nil {
 			if bloberror.HasCode(err, bloberror.ConditionNotMet) {
 				log.Warn("DistributedCache:: WriteFromBuffer failed due to ETag mismatch, retrying...")
-				time.Sleep(5 * time.Millisecond)
 				continue
 			} else {
 				logAndReturnError(fmt.Sprintf("failed to write updated JSON to file: %v", err))
 				return nil, err
 			}
-			// If successful, break out of the loop
-		} else {
-			success = true
-			break
 		}
+		// if openCount, ok := jsonData["open-count"].(float64); ok {
+		// 	jsonData["open-count"] = openCount + 1 // Update the "open-fd" parameter
+		// } else {
+		// 	logAndReturnError("DistributedCache:: Failed to cast 'open-count' to int")
+		// 	return nil, fmt.Errorf("invalid type for 'open-count'")
+		// }
+
+		// // Marshal the updated JSON back to a string
+		// updatedContent, err = json.MarshalIndent(jsonData, "", "    ")
+		// if err != nil {
+		// 	logAndReturnError(fmt.Sprintf("DistributedCache:: Failed to marshal updated JSON: %v", err))
+		// 	return nil, err
+		// }
+
+		// // Replace the original file with the temporary file
+		// err = dc.NextComponent().WriteFromBuffer(internal.WriteFromBufferOptions{Name: cacheDir + "/" + fileName, Data: []byte(updatedContent), Etag: true, EtagVal: attr.ETag})
+		// if err != nil {
+		// 	if bloberror.HasCode(err, bloberror.ConditionNotMet) {
+		// 		log.Warn("DistributedCache:: WriteFromBuffer failed due to ETag mismatch, retrying...")
+		// 		time.Sleep(5 * time.Millisecond)
+		// 		continue
+		// 	} else {
+		// 		logAndReturnError(fmt.Sprintf("failed to write updated JSON to file: %v", err))
+		// 		return nil, err
+		// 	}
+		// If successful, break out of the loop
+		success = true
+		break
 	}
 
 	// If retries exhausted and still failed, return an error
@@ -415,7 +463,7 @@ func (dc *DistributedCache) OpenMetadataFile(cacheDir string, fileName string) (
 		logAndReturnError(fmt.Sprintf("failed to write updated JSON to file after %d", err))
 		return nil, err
 	}
-	return updatedContent, nil
+	return resp, nil
 
 }
 
@@ -426,12 +474,12 @@ func (dc *DistributedCache) UpdateMetadataFile(cacheDir string, fileName string,
 	success := false
 	var err error
 	for i := range retryCount {
-		attr, err := dc.storage.GetAttr(cacheDir + "/Objects/" + fileName)
+		attr, err := dc.NextComponent().GetAttr(internal.GetAttrOptions{Name: cacheDir + "/" + fileName})
 		if err != nil {
 			logAndReturnError(fmt.Sprintf("DistributedCache:: Failed to get file attributes: %v", err))
 			return err
 		}
-		fileContent, err := dc.storage.ReadBuffer(cacheDir+"/"+fileName, 0, 0)
+		fileContent, err := dc.NextComponent().ReadFileWithName(internal.ReadFileWithNameOptions{Path: cacheDir + "/" + fileName})
 		if err != nil {
 			logAndReturnError(fmt.Sprintf("DistributedCache:: Failed to read metadatafile %s: %v", fileName, err))
 			return err
@@ -481,7 +529,7 @@ func (dc *DistributedCache) UpdateMetadataFile(cacheDir string, fileName string,
 		}
 
 		// Replace the original file with the temporary file
-		err = dc.storage.WriteFromBuffer(internal.WriteFromBufferOptions{Name: cacheDir + "/" + fileName, Data: []byte(updatedContent), Etag: true, EtagVal: attr.ETag})
+		err = dc.NextComponent().WriteFromBuffer(internal.WriteFromBufferOptions{Name: cacheDir + "/" + fileName, Data: []byte(updatedContent), Etag: true, EtagVal: attr.ETag})
 		if err != nil {
 			if bloberror.HasCode(err, bloberror.ConditionNotMet) {
 				log.Warn("DistributedCache:: WriteFromBuffer failed due to ETag mismatch, retrying... Attempt %d/%d", i+1, retryCount)

@@ -571,8 +571,12 @@ func (az *AzStorage) WriteFromBuffer(opt internal.WriteFromBufferOptions) error 
 	return az.storage.WriteFromBuffer(opt)
 }
 
+func (az *AzStorage) SetAttr(options internal.SetAttrOptions) error {
+	return az.storage.SetAttr(options.Name, options.Attr)
+}
+
 // TODO : Below methods are pending to be implemented
-// SetAttr(string, internal.ObjAttr) error
+// astring, internal.ObjAttr) error
 // UnlinkFile(string) error
 // ReleaseFile(*handlemap.Handle) error
 // FlushFile(*handlemap.Handle) error
