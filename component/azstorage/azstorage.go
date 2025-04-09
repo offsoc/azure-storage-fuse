@@ -40,6 +40,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-storage-fuse/v2/common"
 	"github.com/Azure/azure-storage-fuse/v2/common/config"
@@ -469,6 +470,16 @@ func (az *AzStorage) ReadInBuffer(options internal.ReadInBufferOptions) (length 
 
 	length = int(dataLen)
 	return
+}
+
+func (az *AzStorage) DownloadStreamWithEtag(options internal.DownloadStreamWithEtagOptions) (data []byte, etag *azcore.ETag, err error) {
+	data, etag, err = az.storage.DownloadStreamWithEtag(options.Path)
+	if err != nil {
+		log.Err("AzStorage::DownloadStream : Failed to read %s [%s]", options.Path, err.Error())
+		return nil, nil, err
+	}
+
+	return data, etag, nil
 }
 
 func (az *AzStorage) WriteFile(options internal.WriteFileOptions) (int, error) {

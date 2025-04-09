@@ -124,8 +124,8 @@ func (dc *DistributedCache) Start(ctx context.Context) error {
 	}
 	dc.heartbeatManager.Start()
 	// dc.CreateMetadataFile(cacheDir, "metadatafile1.json.md")
-	// dc.UpdateMetaParallel(cacheDir)
-	dc.OpenMetaParallel(cacheDir)
+	dc.UpdateMetaParallel(cacheDir)
+	// dc.OpenMetaParallel(cacheDir)
 	// dc.CreateMetadataFile(cacheDir, "metadataNeWWW.md")
 	// dc.OpenMetadataFile(cacheDir, "metadataNeWWW.md")
 	return nil
@@ -264,7 +264,7 @@ func (dc *DistributedCache) UpdateMetaParallel(cacheDir string) error {
 			defer wg.Done() // Decrement the counter when the goroutine finishes
 
 			// Generate a unique file name for each goroutine
-			fileName := fmt.Sprintf("metadata_%d.md", i)
+			fileName := fmt.Sprintf("metadata_%d.md", i+15)
 			offsetname := fmt.Sprintf("abcdef%d", i)
 			dummyReplica := map[string]interface{}{
 				"offset":      offsetname,
@@ -474,12 +474,7 @@ func (dc *DistributedCache) UpdateMetadataFile(cacheDir string, fileName string,
 	success := false
 	var err error
 	for i := range retryCount {
-		attr, err := dc.NextComponent().GetAttr(internal.GetAttrOptions{Name: cacheDir + "/" + fileName})
-		if err != nil {
-			logAndReturnError(fmt.Sprintf("DistributedCache:: Failed to get file attributes: %v", err))
-			return err
-		}
-		fileContent, err := dc.NextComponent().ReadFileWithName(internal.ReadFileWithNameOptions{Path: cacheDir + "/" + fileName})
+		fileContent, etag, err := dc.NextComponent().DownloadStreamWithEtag(internal.DownloadStreamWithEtagOptions{Path: cacheDir + "/" + fileName})
 		if err != nil {
 			logAndReturnError(fmt.Sprintf("DistributedCache:: Failed to read metadatafile %s: %v", fileName, err))
 			return err
@@ -506,10 +501,8 @@ func (dc *DistributedCache) UpdateMetadataFile(cacheDir string, fileName string,
 			if !ok {
 				continue
 			}
-			if layoutMap["chunk-id"] == newReplica["chunk-id"] { //TODO:: take chunk id as input?
-				firstLayout = layoutMap
-				break
-			}
+			firstLayout = layoutMap
+			break
 		}
 		if firstLayout == nil {
 			logAndReturnError("DistributedCache:: Failed to find layout section with the specified chunk-id in JSON")
@@ -527,10 +520,15 @@ func (dc *DistributedCache) UpdateMetadataFile(cacheDir string, fileName string,
 			logAndReturnError(fmt.Sprintf("DistributedCache:: Failed to marshal updated JSON: %v", err))
 			return err
 		}
+		etagValue := ""
+		if etag != nil {
+			etagValue = string(*etag)
+		}
 
 		// Replace the original file with the temporary file
-		err = dc.NextComponent().WriteFromBuffer(internal.WriteFromBufferOptions{Name: cacheDir + "/" + fileName, Data: []byte(updatedContent), Etag: true, EtagVal: attr.ETag})
+		err = dc.NextComponent().WriteFromBuffer(internal.WriteFromBufferOptions{Name: cacheDir + "/" + fileName, Data: []byte(updatedContent), Etag: true, EtagVal: etagValue})
 		if err != nil {
+
 			if bloberror.HasCode(err, bloberror.ConditionNotMet) {
 				log.Warn("DistributedCache:: WriteFromBuffer failed due to ETag mismatch, retrying... Attempt %d/%d", i+1, retryCount)
 				time.Sleep(5 * time.Millisecond)

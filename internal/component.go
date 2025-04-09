@@ -37,6 +37,7 @@ import (
 	"context"
 	"syscall"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-storage-fuse/v2/common"
 	"github.com/Azure/azure-storage-fuse/v2/internal/handlemap"
 )
@@ -110,6 +111,7 @@ type Component interface {
 	ReadFile(ReadFileOptions) ([]byte, error)
 	ReadFileWithName(ReadFileWithNameOptions) ([]byte, error)
 	ReadInBuffer(ReadInBufferOptions) (int, error)
+	DownloadStreamWithEtag(DownloadStreamWithEtagOptions) ([]byte, *azcore.ETag, error)
 
 	WriteFile(WriteFileOptions) (int, error)
 	TruncateFile(TruncateFileOptions) error

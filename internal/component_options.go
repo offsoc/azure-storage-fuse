@@ -118,6 +118,10 @@ type ReadInBufferOptions struct {
 	Data   []byte
 }
 
+type DownloadStreamWithEtagOptions struct {
+	Path string
+}
+
 type WriteFileOptions struct {
 	Handle   *handlemap.Handle
 	Offset   int64

@@ -37,6 +37,7 @@ import (
 	"context"
 	"syscall"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-storage-fuse/v2/common"
 	"github.com/Azure/azure-storage-fuse/v2/internal/handlemap"
 )
@@ -212,6 +213,13 @@ func (base *BaseComponent) ReadInBuffer(options ReadInBufferOptions) (int, error
 		return base.next.ReadInBuffer(options)
 	}
 	return 0, nil
+}
+
+func (base *BaseComponent) DownloadStreamWithEtag(options DownloadStreamWithEtagOptions) ([]byte, *azcore.ETag, error) {
+	if base.next != nil {
+		return base.next.DownloadStreamWithEtag(options)
+	}
+	return nil, nil, nil
 }
 
 func (base *BaseComponent) WriteFile(options WriteFileOptions) (int, error) {

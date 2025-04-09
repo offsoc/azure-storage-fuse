@@ -36,6 +36,7 @@ package azstorage
 import (
 	"os"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-storage-fuse/v2/common"
 	"github.com/Azure/azure-storage-fuse/v2/common/log"
@@ -120,6 +121,7 @@ type AzConnection interface {
 	ReadToFile(name string, offset int64, count int64, fi *os.File) error
 	ReadBuffer(name string, offset int64, len int64) ([]byte, error)
 	ReadInBuffer(name string, offset int64, len int64, data []byte, etag *string) error
+	DownloadStreamWithEtag(name string) ([]byte, *azcore.ETag, error)
 
 	WriteFromFile(name string, metadata map[string]*string, fi *os.File) error
 	WriteFromBuffer(options internal.WriteFromBufferOptions) error

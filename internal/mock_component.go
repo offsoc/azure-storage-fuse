@@ -39,11 +39,13 @@ package internal
 
 import (
 	context "context"
-	common "github.com/Azure/azure-storage-fuse/v2/common"
-	handlemap "github.com/Azure/azure-storage-fuse/v2/internal/handlemap"
 	reflect "reflect"
 	"syscall"
 	"time"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	common "github.com/Azure/azure-storage-fuse/v2/common"
+	handlemap "github.com/Azure/azure-storage-fuse/v2/internal/handlemap"
 
 	gomock "github.com/golang/mock/gomock"
 )
@@ -498,9 +500,18 @@ func (m *MockComponent) ReadInBuffer(arg0 ReadInBufferOptions) (int, error) {
 }
 
 // ReadInBuffer indicates an expected call of ReadInBuffer.
-func (mr *MockComponentMockRecorder) ReadInBuffer(arg0 interface{}) *gomock.Call {
+func (m *MockComponent) DownloadStreamWithEtag(arg0 DownloadStreamWithEtagOptions) ([]byte, *azcore.ETag, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DownloadStreamWithEtag", arg0)
+	ret0, _ := ret[0].([]byte)
+	ret2, _ := ret[1].(error)
+	ret1, _ := ret[2].(*azcore.ETag)
+	return ret0, ret1, ret2
+}
+
+func (mr *MockComponentMockRecorder) DownloadStreamWithEtag(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadInBuffer", reflect.TypeOf((*MockComponent)(nil).ReadInBuffer), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadStreamWithEtag", reflect.TypeOf((*MockComponent)(nil).DownloadStreamWithEtag), arg0)
 }
 
 // ReadLink mocks base method.

@@ -977,6 +977,62 @@ func (bb *BlockBlob) ReadInBuffer(name string, offset int64, len int64, data []b
 	return nil
 }
 
+// DownloadStream : Download
+func (bb *BlockBlob) DownloadStreamWithEtag(name string) ([]byte, *azcore.ETag, error) {
+	// log.Trace("BlockBlob::ReadInBuffer : name %s", name)
+	blobClient := bb.Container.NewBlobClient(filepath.Join(bb.Config.prefixPath, name))
+
+	ctx, cancel := context.WithTimeout(context.Background(), max_context_timeout*time.Minute)
+	defer cancel()
+
+	// opt := &blob.DownloadStreamOptions{
+	// 	Range: blob.HTTPRange{
+	// 		Offset: offset,
+	// 		Count:  len,
+	// 	},
+	// 	CPKInfo: bb.blobCPKOpt,
+	// }
+
+	downloadResponse, err := blobClient.DownloadStream(ctx, nil)
+
+	if err != nil {
+		e := storeBlobErrToErr(err)
+		if e == ErrFileNotFound {
+			return nil, nil, syscall.ENOENT
+		} else if e == InvalidRange {
+			return nil, nil, syscall.ERANGE
+		}
+
+		log.Err("BlockBlob::DownloadStream : Failed to download blob %s [%s]", name, err.Error())
+		return nil, nil, err
+	}
+
+	var streamBody io.ReadCloser = downloadResponse.NewRetryReader(ctx, nil)
+	data := make([]byte, *downloadResponse.ContentLength)
+	dataRead, err := io.ReadFull(streamBody, data)
+
+	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+		log.Err("BlockBlob::ReadInBuffer : Failed to copy data from body to buffer for blob %s [%s]", name, err.Error())
+		return nil, nil, err
+	}
+
+	if dataRead < 0 {
+		log.Err("BlockBlob::ReadInBuffer : Failed to copy data from body to buffer for blob %s", name)
+		return nil, nil, errors.New("failed to copy data from body to buffer")
+	}
+
+	err = streamBody.Close()
+	if err != nil {
+		log.Err("BlockBlob::ReadInBuffer : Failed to close body for blob %s [%s]", name, err.Error())
+	}
+
+	// if etag != nil {
+	// 	*etag = sanitizeEtag(downloadResponse.ETag)
+	// }
+
+	return data, downloadResponse.ETag, nil
+}
+
 func (bb *BlockBlob) calculateBlockSize(name string, fileSize int64) (blockSize int64, err error) {
 	// If bufferSize > (BlockBlobMaxStageBlockBytes * BlockBlobMaxBlocks), then error
 	if fileSize > MaxBlobSize {

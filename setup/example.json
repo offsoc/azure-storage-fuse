@@ -8,8 +8,8 @@
 	"sha1hash": "fc1dccf105a357151b741b96c12cc1273612f04e", 
     "chunk-size": "1GB", 
     "num-chunks": 11, 
-
     "layout": [{ 
+
         "chunk-id": "GUID", 
         "chunk-hash": "chunk hash for data integrity", 
     "replicas": [  

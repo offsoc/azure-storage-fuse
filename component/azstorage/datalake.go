@@ -471,6 +471,10 @@ func (dl *Datalake) ReadInBuffer(name string, offset int64, len int64, data []by
 	return dl.BlockBlob.ReadInBuffer(name, offset, len, data, etag)
 }
 
+func (dl *Datalake) DownloadStreamWithEtag(name string) ([]byte, *azcore.ETag, error) {
+	return dl.BlockBlob.DownloadStreamWithEtag(name)
+}
+
 // WriteFromFile : Upload local file to file
 func (dl *Datalake) WriteFromFile(name string, metadata map[string]*string, fi *os.File) (err error) {
 	// File in DataLake may have permissions and ACL set. Just uploading the file will override them.
